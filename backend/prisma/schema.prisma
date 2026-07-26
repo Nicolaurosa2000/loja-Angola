@@ -31,6 +31,8 @@ model User {
   wishlist        WishlistItem[]
   coupons         CouponUsage[]
   auditLogs       AuditLog[]
+  
+  @@map("user") 
 }
 
 model Role {
@@ -43,6 +45,7 @@ model Role {
 
   permissions RolePermission[]
   userRoles   UserRoleAssignment[]
+  @@map("role") 
 }
 
 model Permission {
@@ -55,6 +58,7 @@ model Permission {
   updatedAt   DateTime  @updatedAt
 
   roles RolePermission[]
+  @@map("permission") 
 }
 
 model RolePermission {
@@ -97,6 +101,7 @@ model Category {
   parent   Category? @relation("CategoryParent", fields: [parentId], references: [id])
   children Category[] @relation("CategoryParent")
   products Product[]
+  @@map("category") 
 }
 
 model Brand {
@@ -112,6 +117,7 @@ model Brand {
   deletedAt   DateTime?
 
   products Product[]
+  @@map("brand") 
 }
 
 model Product {
@@ -158,6 +164,7 @@ model Product {
   @@index([slug])
   @@index([categoryId])
   @@index([brandId])
+  @@map("product") 
 }
 
 model ProductImage {
@@ -171,6 +178,7 @@ model ProductImage {
   updatedAt DateTime @updatedAt
 
   product Product @relation(fields: [productId], references: [id])
+  @@map("productImagem") 
 }
 
 model ProductTag {
