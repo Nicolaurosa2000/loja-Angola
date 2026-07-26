@@ -8,221 +8,144 @@ datasource db {
 }
 
 model User {
-  id              String    @id @default(uuid())
-  name            String
-  email           String    @unique
-  phone           String?
-  password        String
-  avatar          String?
-  role            String    @default("CUSTOMER")
-  isActive        Boolean   @default(true)
-  emailVerifiedAt DateTime?
-  resetToken      String?
-  resetTokenExp   DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  deletedAt       DateTime?
+  id                 String               @id @default(uuid())
+  name               String
+  email              String               @unique(map: "User_email_key")
+  phone              String?
+  password           String
+  avatar             String?
+  role               String               @default("CUSTOMER")
+  isActive           Boolean              @default(true)
+  emailVerifiedAt    DateTime?
+  resetToken         String?
+  resetTokenExp      DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  deletedAt          DateTime?
+  address            address[]
+  auditlog           auditlog[]
+  cart               cart?
+  couponusage        couponusage[]
+  order              order[]
+  productreview      productreview[]
+  userroleassignment userroleassignment[]
+  wishlistitem       wishlistitem[]
 
-  roleAssignments UserRoleAssignment[]
-  addresses       Address[]
-  orders          Order[]
-  reviews         ProductReview[]
-  cart            Cart?
-  wishlist        WishlistItem[]
-  coupons         CouponUsage[]
-  auditLogs       AuditLog[]
-  
-  @@map("user") 
+  @@map("user")
 }
 
 model Role {
-  id          String    @id @default(uuid())
-  name        String    @unique
-  description String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  id                 String               @id @default(uuid())
+  name               String               @unique(map: "Role_name_key")
+  description        String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  deletedAt          DateTime?
+  rolepermission     rolepermission[]
+  userroleassignment userroleassignment[]
 
-  permissions RolePermission[]
-  userRoles   UserRoleAssignment[]
-  @@map("role") 
+  @@map("role")
 }
 
 model Permission {
-  id          String    @id @default(uuid())
-  name        String    @unique
-  description String?
-  resource    String
-  action      String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id             String           @id @default(uuid())
+  name           String           @unique(map: "Permission_name_key")
+  description    String?
+  resource       String
+  action         String
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  rolepermission rolepermission[]
 
-  roles RolePermission[]
-  @@map("permission") 
-}
-
-model RolePermission {
-  roleId       String
-  permissionId String
-  createdAt    DateTime @default(now())
-
-  role       Role       @relation(fields: [roleId], references: [id])
-  permission Permission @relation(fields: [permissionId], references: [id])
-
-  @@id([roleId, permissionId])
-}
-
-model UserRoleAssignment {
-  userId    String
-  roleId    String
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-  role Role @relation(fields: [roleId], references: [id])
-
-  @@id([userId, roleId])
+  @@map("permission")
 }
 
 model Category {
-  id              String    @id @default(uuid())
+  id              String     @id @default(uuid())
   name            String
-  slug            String    @unique
+  slug            String     @unique(map: "Category_slug_key")
   description     String?
   image           String?
   metaTitle       String?
   metaDescription String?
-  isActive        Boolean   @default(true)
-  sortOrder       Int       @default(0)
+  isActive        Boolean    @default(true)
+  sortOrder       Int        @default(0)
   parentId        String?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
   deletedAt       DateTime?
+  parent          Category?  @relation("CategoryParent", fields: [parentId], references: [id], map: "Category_parentId_fkey")
+  children        Category[] @relation("CategoryParent")
+  products        Product[]
 
-  parent   Category? @relation("CategoryParent", fields: [parentId], references: [id])
-  children Category[] @relation("CategoryParent")
-  products Product[]
-  @@map("category") 
+  @@index([parentId], map: "Category_parentId_fkey")
+  @@map("category")
 }
 
 model Brand {
-  id          String   @id @default(uuid())
-  name        String   @unique
-  slug        String   @unique
+  id          String    @id @default(uuid())
+  name        String    @unique(map: "Brand_name_key")
+  slug        String    @unique(map: "Brand_slug_key")
   description String?
   logo        String?
   website     String?
-  isActive    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
+  products    Product[]
 
-  products Product[]
-  @@map("brand") 
+  @@map("brand")
 }
 
 model Product {
-  id               String   @id @default(uuid())
-  name             String
-  slug             String   @unique
-  description      String
-  fullDescription  String?
-  price            Float
-  promotionalPrice Float?
-  sku              String   @unique
-  code             String?
-  weight           Float?
-  length           Float?
-  width            Float?
-  height           Float?
-  stock            Int      @default(0)
-  minStock         Int      @default(0)
-  isFeatured       Boolean  @default(false)
-  isActive         Boolean  @default(true)
-  status           String   @default("ACTIVE")
-  metaTitle        String?
-  metaDescription  String?
-  avgRating        Float?
-  videoUrl         String?
-  categoryId       String
-  brandId          String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-  deletedAt        DateTime?
+  id                                                  String            @id @default(uuid())
+  name                                                String
+  slug                                                String            @unique(map: "Product_slug_key")
+  description                                         String
+  fullDescription                                     String?
+  price                                               Float
+  promotionalPrice                                    Float?
+  sku                                                 String            @unique(map: "Product_sku_key")
+  code                                                String?
+  weight                                              Float?
+  length                                              Float?
+  width                                               Float?
+  height                                              Float?
+  stock                                               Int               @default(0)
+  minStock                                            Int               @default(0)
+  isFeatured                                          Boolean           @default(false)
+  isActive                                            Boolean           @default(true)
+  status                                              String            @default("ACTIVE")
+  metaTitle                                           String?
+  metaDescription                                     String?
+  avgRating                                           Float?
+  videoUrl                                            String?
+  categoryId                                          String
+  brandId                                             String?
+  createdAt                                           DateTime          @default(now())
+  updatedAt                                           DateTime          @updatedAt
+  deletedAt                                           DateTime?
+  cartitem                                            cartitem[]
+  orderitem                                           orderitem[]
+  brand                                               Brand?            @relation(fields: [brandId], references: [id], map: "Product_brandId_fkey")
+  category                                            Category          @relation(fields: [categoryId], references: [id], onDelete: NoAction, map: "Product_categoryId_fkey")
+  productimage                                        productimage[]
+  productrelation_productrelation_productAIdToproduct productrelation[] @relation("productrelation_productAIdToproduct")
+  productrelation_productrelation_productBIdToproduct productrelation[] @relation("productrelation_productBIdToproduct")
+  productreview                                       productreview[]
+  producttag                                          producttag[]
+  wishlistitem                                        wishlistitem[]
 
-  category      Category         @relation(fields: [categoryId], references: [id])
-  brand         Brand?           @relation(fields: [brandId], references: [id])
-  images        ProductImage[]
-  tags          ProductTag[]
-  reviews       ProductReview[]
-  relatedTo     ProductRelation[] @relation("ProductRelationA")
-  relatedFrom   ProductRelation[] @relation("ProductRelationB")
-  orderItems    OrderItem[]
-  cartItems     CartItem[]
-  wishlistItems WishlistItem[]
-
-  @@index([sku])
-  @@index([slug])
-  @@index([categoryId])
-  @@index([brandId])
-  @@map("product") 
+  @@index([brandId], map: "Product_brandId_idx")
+  @@index([categoryId], map: "Product_categoryId_idx")
+  @@index([sku], map: "Product_sku_idx")
+  @@index([slug], map: "Product_slug_idx")
+  @@map("product")
 }
 
-model ProductImage {
-  id        String   @id @default(uuid())
-  url       String
-  alt       String?
-  sortOrder Int      @default(0)
-  isCover   Boolean  @default(false)
-  productId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  product Product @relation(fields: [productId], references: [id])
-  @@map("productImagem") 
-}
-
-model ProductTag {
-  id        String   @id @default(uuid())
-  name      String
-  productId String
-  createdAt DateTime @default(now())
-
-  product Product @relation(fields: [productId], references: [id])
-
-  @@unique([name, productId])
-}
-
-model ProductRelation {
-  productAId String
-  productBId String
-  createdAt   DateTime @default(now())
-
-  productA Product @relation("ProductRelationA", fields: [productAId], references: [id])
-  productB Product @relation("ProductRelationB", fields: [productBId], references: [id])
-
-  @@id([productAId, productBId])
-}
-
-model ProductReview {
-  id        String   @id @default(uuid())
-  rating    Int
-  title     String?
-  comment   String?
-  status    String   @default("PENDING")
-  userId    String
-  productId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-
-  user    User    @relation(fields: [userId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
-
-  @@unique([userId, productId])
-}
-
-model Address {
-  id           String   @id @default(uuid())
+model address {
+  id           String    @id
   label        String?
   street       String
   number       String?
@@ -231,210 +154,19 @@ model Address {
   city         String
   province     String
   zipCode      String?
-  isDefault    Boolean  @default(false)
+  isDefault    Boolean   @default(false)
   userId       String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime
   deletedAt    DateTime?
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, map: "Address_userId_fkey")
+  order        order[]
 
-  user   User    @relation(fields: [userId], references: [id])
-  orders Order[] @relation("OrderAddress")
+  @@index([userId], map: "Address_userId_fkey")
 }
 
-model Cart {
-  id        String   @id @default(uuid())
-  sessionId String?  @unique
-  userId    String?  @unique
-  couponId  String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user   User?      @relation(fields: [userId], references: [id])
-  coupon Coupon?    @relation(fields: [couponId], references: [id])
-  items  CartItem[]
-}
-
-model CartItem {
-  id        String   @id @default(uuid())
-  quantity  Int      @default(1)
-  cartId    String
-  productId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  cart    Cart    @relation(fields: [cartId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
-
-  @@unique([cartId, productId])
-}
-
-model WishlistItem {
-  id        String   @id @default(uuid())
-  userId    String
-  productId String
-  createdAt DateTime @default(now())
-
-  user    User    @relation(fields: [userId], references: [id])
-  product Product @relation(fields: [productId], references: [id])
-
-  @@unique([userId, productId])
-}
-
-model Coupon {
-  id             String    @id @default(uuid())
-  code           String    @unique
-  description    String?
-  type           String
-  value          Float
-  minOrderValue  Float?
-  maxUses        Int?
-  usedCount      Int       @default(0)
-  maxUsesPerUser Int?
-  isActive       Boolean   @default(true)
-  startsAt       DateTime?
-  expiresAt      DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  deletedAt      DateTime?
-
-  carts          Cart[]
-  usages         CouponUsage[]
-  orderDiscounts OrderDiscount[]
-}
-
-model CouponUsage {
-  id        String   @id @default(uuid())
-  couponId  String
-  userId    String
-  orderId   String?
-  createdAt DateTime @default(now())
-
-  coupon Coupon @relation(fields: [couponId], references: [id])
-  user   User   @relation(fields: [userId], references: [id])
-  order  Order? @relation(fields: [orderId], references: [id])
-}
-
-model Order {
-  id             String    @id @default(uuid())
-  orderNumber    String    @unique
-  userId         String
-  addressId      String?
-  status         String    @default("PENDING")
-  subtotal       Float
-  discountAmount Float     @default(0)
-  shippingAmount Float     @default(0)
-  total          Float
-  paymentMethod  String?
-  paymentStatus  String?
-  notes          String?
-  trackingCode   String?
-  paidAt         DateTime?
-  cancelledAt    DateTime?
-  deliveredAt    DateTime?
-  createdAt      DateTime  @default(now())
-  updatedAt      DateTime  @updatedAt
-  deletedAt      DateTime?
-
-  user       User                @relation(fields: [userId], references: [id])
-  address    Address?            @relation("OrderAddress", fields: [addressId], references: [id])
-  items      OrderItem[]
-  payments   PaymentTransaction[]
-  couponUsages CouponUsage[]
-  discounts  OrderDiscount[]
-
-  @@index([orderNumber])
-  @@index([userId])
-  @@index([status])
-}
-
-model OrderItem {
-  id         String   @id @default(uuid())
-  quantity   Int
-  unitPrice  Float
-  totalPrice Float
-  productId  String
-  orderId    String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  product Product @relation(fields: [productId], references: [id])
-  order   Order   @relation(fields: [orderId], references: [id])
-}
-
-model OrderDiscount {
-  id        String   @id @default(uuid())
-  couponId  String
-  orderId   String
-  amount    Float
-  createdAt DateTime @default(now())
-
-  coupon Coupon @relation(fields: [couponId], references: [id])
-  order  Order  @relation(fields: [orderId], references: [id])
-}
-
-model PaymentTransaction {
-  id              String    @id @default(uuid())
-  orderId         String
-  method          String
-  amount          Float
-  status          String    @default("PENDING")
-  transactionId   String?   @unique
-  gatewayResponse String?
-  paidAt          DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-
-  order Order @relation(fields: [orderId], references: [id])
-}
-
-model Banner {
-  id        String   @id @default(uuid())
-  title     String?
-  subtitle  String?
-  image     String
-  link      String?
-  position  String   @default("HERO")
-  sortOrder Int      @default(0)
-  isActive  Boolean  @default(true)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  deletedAt DateTime?
-}
-
-model NewsletterSubscriber {
-  id         String    @id @default(uuid())
-  email      String    @unique
-  name       String?
-  isActive   Boolean   @default(true)
-  verifiedAt DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  deletedAt  DateTime?
-}
-
-model Setting {
-  id        String   @id @default(uuid())
-  key       String   @unique
-  value     String
-  group     String   @default("general")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-model Upload {
-  id           String   @id @default(uuid())
-  filename     String
-  originalName String
-  mimeType     String
-  size         Int
-  path         String
-  url          String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-}
-
-model AuditLog {
-  id         String   @id @default(uuid())
+model auditlog {
+  id         String   @id
   action     String
   resource   String
   resourceId String?
@@ -443,10 +175,285 @@ model AuditLog {
   userAgent  String?
   userId     String?
   createdAt  DateTime @default(now())
+  user       User?    @relation(fields: [userId], references: [id], map: "AuditLog_userId_fkey")
 
-  user User? @relation(fields: [userId], references: [id])
+  @@index([action], map: "AuditLog_action_idx")
+  @@index([resource, resourceId], map: "AuditLog_resource_resourceId_idx")
+  @@index([userId], map: "AuditLog_userId_idx")
+}
 
-  @@index([resource, resourceId])
-  @@index([userId])
-  @@index([action])
+model banner {
+  id        String    @id
+  title     String?
+  subtitle  String?
+  image     String
+  link      String?
+  position  String    @default("HERO")
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  deletedAt DateTime?
+}
+
+model cart {
+  id        String     @id
+  sessionId String?    @unique(map: "Cart_sessionId_key")
+  userId    String?    @unique(map: "Cart_userId_key")
+  couponId  String?
+  createdAt DateTime   @default(now())
+  updatedAt DateTime
+  coupon    coupon?    @relation(fields: [couponId], references: [id], map: "Cart_couponId_fkey")
+  user      User?      @relation(fields: [userId], references: [id], map: "Cart_userId_fkey")
+  cartitem  cartitem[]
+
+  @@index([couponId], map: "Cart_couponId_fkey")
+}
+
+model cartitem {
+  id        String   @id
+  quantity  Int      @default(1)
+  cartId    String
+  productId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  cart      cart     @relation(fields: [cartId], references: [id], onDelete: NoAction, map: "CartItem_cartId_fkey")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction, map: "CartItem_productId_fkey")
+
+  @@unique([cartId, productId], map: "CartItem_cartId_productId_key")
+  @@index([productId], map: "CartItem_productId_fkey")
+}
+
+model coupon {
+  id             String          @id
+  code           String          @unique(map: "Coupon_code_key")
+  description    String?
+  type           String
+  value          Float
+  minOrderValue  Float?
+  maxUses        Int?
+  usedCount      Int             @default(0)
+  maxUsesPerUser Int?
+  isActive       Boolean         @default(true)
+  startsAt       DateTime?
+  expiresAt      DateTime?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime
+  deletedAt      DateTime?
+  cart           cart[]
+  couponusage    couponusage[]
+  orderdiscount  orderdiscount[]
+}
+
+model couponusage {
+  id        String   @id
+  couponId  String
+  userId    String
+  orderId   String?
+  createdAt DateTime @default(now())
+  coupon    coupon   @relation(fields: [couponId], references: [id], onDelete: NoAction, map: "CouponUsage_couponId_fkey")
+  order     order?   @relation(fields: [orderId], references: [id], map: "CouponUsage_orderId_fkey")
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction, map: "CouponUsage_userId_fkey")
+
+  @@index([couponId], map: "CouponUsage_couponId_fkey")
+  @@index([orderId], map: "CouponUsage_orderId_fkey")
+  @@index([userId], map: "CouponUsage_userId_fkey")
+}
+
+model newslettersubscriber {
+  id         String    @id
+  email      String    @unique(map: "NewsletterSubscriber_email_key")
+  name       String?
+  isActive   Boolean   @default(true)
+  verifiedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime
+  deletedAt  DateTime?
+}
+
+model order {
+  id                 String               @id
+  orderNumber        String               @unique(map: "Order_orderNumber_key")
+  userId             String
+  addressId          String?
+  status             String               @default("PENDING")
+  subtotal           Float
+  discountAmount     Float                @default(0)
+  shippingAmount     Float                @default(0)
+  total              Float
+  paymentMethod      String?
+  paymentStatus      String?
+  notes              String?
+  trackingCode       String?
+  paidAt             DateTime?
+  cancelledAt        DateTime?
+  deliveredAt        DateTime?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime
+  deletedAt          DateTime?
+  couponusage        couponusage[]
+  address            address?             @relation(fields: [addressId], references: [id], map: "Order_addressId_fkey")
+  user               User                 @relation(fields: [userId], references: [id], onDelete: NoAction, map: "Order_userId_fkey")
+  orderdiscount      orderdiscount[]
+  orderitem          orderitem[]
+  paymenttransaction paymenttransaction[]
+
+  @@index([addressId], map: "Order_addressId_fkey")
+  @@index([orderNumber], map: "Order_orderNumber_idx")
+  @@index([status], map: "Order_status_idx")
+  @@index([userId], map: "Order_userId_idx")
+}
+
+model orderdiscount {
+  id        String   @id
+  couponId  String
+  orderId   String
+  amount    Float
+  createdAt DateTime @default(now())
+  coupon    coupon   @relation(fields: [couponId], references: [id], onDelete: NoAction, map: "OrderDiscount_couponId_fkey")
+  order     order    @relation(fields: [orderId], references: [id], onDelete: NoAction, map: "OrderDiscount_orderId_fkey")
+
+  @@index([couponId], map: "OrderDiscount_couponId_fkey")
+  @@index([orderId], map: "OrderDiscount_orderId_fkey")
+}
+
+model orderitem {
+  id         String   @id
+  quantity   Int
+  unitPrice  Float
+  totalPrice Float
+  productId  String
+  orderId    String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime
+  order      order    @relation(fields: [orderId], references: [id], onDelete: NoAction, map: "OrderItem_orderId_fkey")
+  product    Product  @relation(fields: [productId], references: [id], onDelete: NoAction, map: "OrderItem_productId_fkey")
+
+  @@index([orderId], map: "OrderItem_orderId_fkey")
+  @@index([productId], map: "OrderItem_productId_fkey")
+}
+
+model paymenttransaction {
+  id              String    @id
+  orderId         String
+  method          String
+  amount          Float
+  status          String    @default("PENDING")
+  transactionId   String?   @unique(map: "PaymentTransaction_transactionId_key")
+  gatewayResponse String?
+  paidAt          DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime
+  order           order     @relation(fields: [orderId], references: [id], onDelete: NoAction, map: "PaymentTransaction_orderId_fkey")
+
+  @@index([orderId], map: "PaymentTransaction_orderId_fkey")
+}
+
+model productimage {
+  id        String   @id
+  url       String
+  alt       String?
+  sortOrder Int      @default(0)
+  isCover   Boolean  @default(false)
+  productId String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction, map: "ProductImage_productId_fkey")
+
+  @@index([productId], map: "ProductImage_productId_fkey")
+}
+
+model productrelation {
+  productAId                                  String
+  productBId                                  String
+  createdAt                                   DateTime @default(now())
+  product_productrelation_productAIdToproduct Product  @relation("productrelation_productAIdToproduct", fields: [productAId], references: [id], onDelete: NoAction, map: "ProductRelation_productAId_fkey")
+  product_productrelation_productBIdToproduct Product  @relation("productrelation_productBIdToproduct", fields: [productBId], references: [id], onDelete: NoAction, map: "ProductRelation_productBId_fkey")
+
+  @@id([productAId, productBId])
+  @@index([productBId], map: "ProductRelation_productBId_fkey")
+}
+
+model productreview {
+  id        String    @id
+  rating    Int
+  title     String?
+  comment   String?
+  status    String    @default("PENDING")
+  userId    String
+  productId String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime
+  deletedAt DateTime?
+  product   Product   @relation(fields: [productId], references: [id], onDelete: NoAction, map: "ProductReview_productId_fkey")
+  user      User      @relation(fields: [userId], references: [id], onDelete: NoAction, map: "ProductReview_userId_fkey")
+
+  @@unique([userId, productId], map: "ProductReview_userId_productId_key")
+  @@index([productId], map: "ProductReview_productId_fkey")
+}
+
+model producttag {
+  id        String   @id
+  name      String
+  productId String
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction, map: "ProductTag_productId_fkey")
+
+  @@unique([name, productId], map: "ProductTag_name_productId_key")
+  @@index([productId], map: "ProductTag_productId_fkey")
+}
+
+model rolepermission {
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: NoAction, map: "RolePermission_permissionId_fkey")
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: NoAction, map: "RolePermission_roleId_fkey")
+
+  @@id([roleId, permissionId])
+  @@index([permissionId], map: "RolePermission_permissionId_fkey")
+}
+
+model setting {
+  id        String   @id
+  key       String   @unique(map: "Setting_key_key")
+  value     String
+  group     String   @default("general")
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+}
+
+model upload {
+  id           String   @id
+  filename     String
+  originalName String
+  mimeType     String
+  size         Int
+  path         String
+  url          String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime
+}
+
+model userroleassignment {
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: NoAction, map: "UserRoleAssignment_roleId_fkey")
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction, map: "UserRoleAssignment_userId_fkey")
+
+  @@id([userId, roleId])
+  @@index([roleId], map: "UserRoleAssignment_roleId_fkey")
+}
+
+model wishlistitem {
+  id        String   @id
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction, map: "WishlistItem_productId_fkey")
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction, map: "WishlistItem_userId_fkey")
+
+  @@unique([userId, productId], map: "WishlistItem_userId_productId_key")
+  @@index([productId], map: "WishlistItem_productId_fkey")
 }
