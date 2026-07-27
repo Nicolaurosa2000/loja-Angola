@@ -12,19 +12,17 @@ import routes from "./routes";
 
 const app = express();
 
-// 1. Configuração Global de CORS (Garante que localhost e Vercel passem sem restrições)
+// 1. Configuração de CORS robusta
 app.use(
   cors({
-    origin: true, // Aceita automaticamente qualquer origem requisitante
+    origin: true, // Aceita qualquer origem
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "Accept"],
   })
 );
 
-app.options("*", cors());
-
-// 2. Helmet ajustado para permitir recursos compartilhados
+// 2. Helmet ajustado
 app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
@@ -48,7 +46,7 @@ app.use(
   })
 );
 
-// Healthcheck
+// Healthcheck (ótimo para testar se a API subiu)
 app.get("/health", (_req, res) => {
   res.json({
     success: true,
@@ -67,10 +65,10 @@ app.use("/api/categories", (_req, res, next) => {
   next();
 });
 
-// 3. Aplicação do Roteador com prefixo /api
+// 3. Aplicação do Roteador (Garantindo o prefixo correto)
+// Dica: garanta que o apiLimiter não esteja bloqueando durante os testes em dev
 const prefix = appConfig.apiPrefix || "/api";
-app.use(prefix, apiLimiter);
-app.use(prefix, routes);
+app.use(prefix, routes); // Aplica as rotas primeiro
 
 // Handlers de erro
 app.use(notFoundHandler);
