@@ -15,12 +15,24 @@ export class AppError extends Error {
   }
 }
 
+// Helper para garantir cabeçalhos CORS em respostas de erro
+const setCorsHeaders = (req: Request, res: Response) => {
+  const origin = req.headers.origin || '*';
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept');
+};
+
 export function errorHandler(
   err: Error,
-  _req: Request,
+  req: Request,
   res: Response,
   _next: NextFunction
 ): void {
+  // Injeta cabeçalhos CORS antes de devolver a resposta de erro
+  setCorsHeaders(req, res);
+
   if (err instanceof AppError) {
     logger.warn(`[AppError] ${err.message}`);
     sendError(res, err.message, err.statusCode);
@@ -43,6 +55,8 @@ export function errorHandler(
   sendError(res, 'Internal server error', 500);
 }
 
-export function notFoundHandler(_req: Request, res: Response): void {
-  sendError(res, 'Route not found', 404);
+export function notFoundHandler(req: Request, res: Response): void {
+  // Injeta cabeçalhos CORS antes de devolver o 404
+  setCorsHeaders(req, res);
+  sendError(res, `Route not found: ${req.method} ${req.originalUrl}`, 404);
 }
