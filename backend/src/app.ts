@@ -14,7 +14,7 @@ const app = express();
 
 app.use(helmet());
 app.use(compression());
-import cors from 'cors';
+
 
 // Permite requisições de localhost (desenvolvimento) e Vercel (produção)
 app.use(cors({
