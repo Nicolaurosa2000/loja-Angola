@@ -16,13 +16,13 @@ model User {
   password           String
   avatar             String?
   role               String               @default("CUSTOMER")
-  isActive           Boolean              @default(true)
-  emailVerifiedAt    DateTime?
-  resetToken         String?
-  resetTokenExp      DateTime?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  deletedAt          DateTime?
+  isActive           Boolean              @default(true) @map("isactive")
+  emailVerifiedAt    DateTime?            @map("emailverifiedat")
+  resetToken         String?              @map("resettoken")
+  resetTokenExp      DateTime?            @map("resettokenexp")
+  createdAt          DateTime             @default(now()) @map("createdat")
+  updatedAt          DateTime             @default(now()) @updatedAt @map("updatedat")
+  deletedAt          DateTime?            @map("deletedat")
   addresses          Address[]
   auditlog           AuditLog[]
   cart               Cart?
@@ -39,9 +39,9 @@ model Role {
   id                 String               @id @default(uuid())
   name               String               @unique(map: "Role_name_key")
   description        String?
-  createdAt          DateTime             @default(now())
-  updatedAt          DateTime             @updatedAt
-  deletedAt          DateTime?
+  createdAt          DateTime             @default(now()) @map("createdat")
+  updatedAt          DateTime             @default(now()) @updatedAt @map("updatedat")
+  deletedAt          DateTime?            @map("deletedat")
   rolepermission     RolePermission[]
   userroleassignment UserRoleAssignment[]
 
@@ -54,8 +54,8 @@ model Permission {
   description    String?
   resource       String
   action         String
-  createdAt      DateTime         @default(now())
-  updatedAt      DateTime         @updatedAt
+  createdAt      DateTime         @default(now()) @map("createdat")
+  updatedAt      DateTime         @default(now()) @updatedAt @map("updatedat")
   rolepermission RolePermission[]
 
   @@map("permission")
@@ -67,14 +67,14 @@ model Category {
   slug            String     @unique(map: "Category_slug_key")
   description     String?
   image           String?
-  metaTitle       String?
-  metaDescription String?
-  isActive        Boolean    @default(true)
-  sortOrder       Int        @default(0)
-  parentId        String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
-  deletedAt       DateTime?
+  metaTitle       String?    @map("metatitle")
+  metaDescription String?    @map("metadescription")
+  isActive        Boolean    @default(true) @map("isactive")
+  sortOrder       Int        @default(0) @map("sortorder")
+  parentId        String?    @map("parentid")
+  createdAt       DateTime   @default(now()) @map("createdat")
+  updatedAt       DateTime   @default(now()) @updatedAt @map("updatedat")
+  deletedAt       DateTime?  @map("deletedat")
   parent          Category?  @relation("CategoryParent", fields: [parentId], references: [id])
   children        Category[] @relation("CategoryParent")
   products        Product[]
@@ -90,10 +90,10 @@ model Brand {
   description String?
   logo        String?
   website     String?
-  isActive    Boolean   @default(true)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-  deletedAt   DateTime?
+  isActive    Boolean   @default(true) @map("isactive")
+  createdAt   DateTime  @default(now()) @map("createdat")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updatedat")
+  deletedAt   DateTime? @map("deletedat")
   products    Product[]
 
   @@map("brand")
@@ -104,9 +104,9 @@ model Product {
   name                                                String
   slug                                                String            @unique(map: "Product_slug_key")
   description                                         String
-  fullDescription                                     String?
+  fullDescription                                     String?           @map("fulldescription")
   price                                               Float
-  promotionalPrice                                    Float?
+  promotionalPrice                                    Float?            @map("promotionalprice")
   sku                                                 String            @unique(map: "Product_sku_key")
   code                                                String?
   weight                                              Float?
@@ -114,23 +114,23 @@ model Product {
   width                                               Float?
   height                                              Float?
   stock                                               Int               @default(0)
-  minStock                                            Int               @default(0)
-  isFeatured                                          Boolean           @default(false)
-  isActive                                            Boolean           @default(true)
+  minStock                                            Int               @default(0) @map("minstock")
+  isFeatured                                          Boolean           @default(false) @map("isfeatured")
+  isActive                                            Boolean           @default(true) @map("isactive")
   status                                              String            @default("ACTIVE")
-  metaTitle                                           String?
-  metaDescription                                     String?
-  avgRating                                           Float?
-  videoUrl                                            String?
-  categoryId                                          String
-  brandId                                             String?
-  createdAt                                           DateTime          @default(now())
-  updatedAt                                           DateTime          @updatedAt
-  deletedAt                                           DateTime?
+  metaTitle                                           String?           @map("metatitle")
+  metaDescription                                     String?           @map("metadescription")
+  avgRating                                           Float?            @map("avgrating")
+  videoUrl                                            String?           @map("videourl")
+  categoryId                                          String?           @map("categoryid")
+  brandId                                             String?           @map("brandid")
+  createdAt                                           DateTime          @default(now()) @map("createdat")
+  updatedAt                                           DateTime          @default(now()) @updatedAt @map("updatedat")
+  deletedAt                                           DateTime?         @map("deletedat")
   cartItem                                            CartItem[]
   orderItem                                           OrderItem[]
   brand                                               Brand?            @relation(fields: [brandId], references: [id])
-  category                                            Category          @relation(fields: [categoryId], references: [id], onDelete: NoAction)
+  category                                            Category?         @relation(fields: [categoryId], references: [id], onDelete: NoAction)
   images                                              ProductImage[]
   productrelation_productrelation_productAIdToproduct ProductRelation[] @relation("productrelation_productAIdToproduct")
   productrelation_productrelation_productBIdToproduct ProductRelation[] @relation("productrelation_productBIdToproduct")
@@ -154,13 +154,13 @@ model Address {
   neighborhood String
   city         String
   province     String
-  zipCode      String?
-  isDefault    Boolean   @default(false)
-  userId       String
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
-  deletedAt    DateTime?
-  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction)
+  zipCode      String?   @map("zipcode")
+  isDefault    Boolean   @default(false) @map("isdefault")
+  userId       String?   @map("userid")
+  createdAt    DateTime  @default(now()) @map("createdat")
+  updatedAt    DateTime  @default(now()) @updatedAt @map("updatedat")
+  deletedAt    DateTime? @map("deletedat")
+  user         User?     @relation(fields: [userId], references: [id], onDelete: NoAction)
   order        Order[]
 
   @@index([userId], map: "Address_userId_idx")
@@ -171,12 +171,12 @@ model AuditLog {
   id         String   @id @default(uuid())
   action     String
   resource   String
-  resourceId String?
+  resourceId String?  @map("resourceid")
   details    String?
   ip         String?
-  userAgent  String?
-  userId     String?
-  createdAt  DateTime @default(now())
+  userAgent  String?  @map("useragent")
+  userId     String?  @map("userid")
+  createdAt  DateTime @default(now()) @map("createdat")
   user       User?    @relation(fields: [userId], references: [id])
 
   @@index([action], map: "AuditLog_action_idx")
@@ -192,22 +192,22 @@ model Banner {
   image     String
   link      String?
   position  String    @default("HERO")
-  sortOrder Int       @default(0)
-  isActive  Boolean   @default(true)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  sortOrder Int       @default(0) @map("sortorder")
+  isActive  Boolean   @default(true) @map("isactive")
+  createdAt DateTime  @default(now()) @map("createdat")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updatedat")
+  deletedAt DateTime? @map("deletedat")
 
   @@map("banner")
 }
 
 model Cart {
   id        String     @id @default(uuid())
-  sessionId String?    @unique(map: "Cart_sessionId_key")
-  userId    String?    @unique(map: "Cart_userId_key")
-  couponId  String?
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
+  sessionId String?    @unique @map("sessionid")
+  userId    String?    @unique @map("userid")
+  couponId  String?    @map("couponid")
+  createdAt DateTime   @default(now()) @map("createdat")
+  updatedAt DateTime   @default(now()) @updatedAt @map("updatedat")
   coupon    Coupon?    @relation(fields: [couponId], references: [id])
   user      User?      @relation(fields: [userId], references: [id])
   items     CartItem[]
@@ -219,14 +219,13 @@ model Cart {
 model CartItem {
   id        String   @id @default(uuid())
   quantity  Int      @default(1)
-  cartId    String
-  productId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  cartId    String   @map("cartid")
+  productId String   @map("productid")
+  createdAt DateTime @default(now()) @map("createdat")
+  updatedAt DateTime @default(now()) @updatedAt @map("updatedat")
   cart      Cart     @relation(fields: [cartId], references: [id], onDelete: NoAction)
   product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction)
 
-  @@unique([cartId, productId], map: "CartItem_cartId_productId_key")
   @@index([productId], map: "CartItem_productId_idx")
   @@map("cartitem")
 }
@@ -237,16 +236,16 @@ model Coupon {
   description    String?
   type           String
   value          Float
-  minOrderValue  Float?
-  maxUses        Int?
-  usedCount      Int             @default(0)
-  maxUsesPerUser Int?
-  isActive       Boolean         @default(true)
-  startsAt       DateTime?
-  expiresAt      DateTime?
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  deletedAt      DateTime?
+  minOrderValue  Float?          @map("minordervalue")
+  maxUses        Int?            @map("maxuses")
+  usedCount      Int             @default(0) @map("usedcount")
+  maxUsesPerUser Int?            @map("maxusesperuser")
+  isActive       Boolean         @default(true) @map("isactive")
+  startsAt       DateTime?       @map("startsat")
+  expiresAt      DateTime?       @map("expiresat")
+  createdAt      DateTime        @default(now()) @map("createdat")
+  updatedAt      DateTime        @default(now()) @updatedAt @map("updatedat")
+  deletedAt      DateTime?       @map("deletedat")
   cart           Cart[]
   couponusage    CouponUsage[]
   orderdiscount  OrderDiscount[]
@@ -256,10 +255,10 @@ model Coupon {
 
 model CouponUsage {
   id        String   @id @default(uuid())
-  couponId  String
-  userId    String
-  orderId   String?
-  createdAt DateTime @default(now())
+  couponId  String   @map("couponid")
+  userId    String   @map("userid")
+  orderId   String?  @map("orderid")
+  createdAt DateTime @default(now()) @map("createdat")
   coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: NoAction)
   order     Order?   @relation(fields: [orderId], references: [id])
   user      User     @relation(fields: [userId], references: [id], onDelete: NoAction)
@@ -274,38 +273,38 @@ model NewsletterSubscriber {
   id         String    @id @default(uuid())
   email      String    @unique(map: "NewsletterSubscriber_email_key")
   name       String?
-  isActive   Boolean   @default(true)
-  verifiedAt DateTime?
-  createdAt  DateTime  @default(now())
-  updatedAt  DateTime  @updatedAt
-  deletedAt  DateTime?
+  isActive   Boolean   @default(true) @map("isactive")
+  verifiedAt DateTime? @map("verifiedat")
+  createdAt  DateTime  @default(now()) @map("createdat")
+  updatedAt  DateTime  @default(now()) @updatedAt @map("updatedat")
+  deletedAt  DateTime? @map("deletedat")
 
   @@map("newslettersubscriber")
 }
 
 model Order {
   id             String               @id @default(uuid())
-  orderNumber    String               @unique(map: "Order_orderNumber_key")
-  userId         String
-  addressId      String?
+  orderNumber    String?              @map("ordernumber")
+  userId         String?              @map("userid")
+  addressId      String?              @map("addressid")
   status         String               @default("PENDING")
   subtotal       Float
-  discountAmount Float                @default(0)
-  shippingAmount Float                @default(0)
+  discountAmount Float                @default(0) @map("discountamount")
+  shippingAmount Float                @default(0) @map("shippingamount")
   total          Float
-  paymentMethod  String?
-  paymentStatus  String?
+  paymentMethod  String?              @map("paymentmethod")
+  paymentStatus  String?              @map("paymentstatus")
   notes          String?
-  trackingCode   String?
-  paidAt         DateTime?
-  cancelledAt    DateTime?
-  deliveredAt    DateTime?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  deletedAt      DateTime?
+  trackingCode   String?              @map("trackingcode")
+  paidAt         DateTime?            @map("paidat")
+  cancelledAt    DateTime?            @map("cancelledat")
+  deliveredAt    DateTime?            @map("deliveredat")
+  createdAt      DateTime             @default(now()) @map("createdat")
+  updatedAt      DateTime             @default(now()) @updatedAt @map("updatedat")
+  deletedAt      DateTime?            @map("deletedat")
   couponusage    CouponUsage[]
   address        Address?             @relation(fields: [addressId], references: [id])
-  user           User                 @relation(fields: [userId], references: [id], onDelete: NoAction)
+  user           User?                @relation(fields: [userId], references: [id], onDelete: NoAction)
   discounts      OrderDiscount[]
   items          OrderItem[]
   payments       PaymentTransaction[]
@@ -319,10 +318,10 @@ model Order {
 
 model OrderDiscount {
   id        String   @id @default(uuid())
-  couponId  String
-  orderId   String
+  couponId  String   @map("couponid")
+  orderId   String   @map("orderid")
   amount    Float
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @map("createdat")
   coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: NoAction)
   order     Order    @relation(fields: [orderId], references: [id], onDelete: NoAction)
 
@@ -334,14 +333,14 @@ model OrderDiscount {
 model OrderItem {
   id         String   @id @default(uuid())
   quantity   Int
-  unitPrice  Float
-  totalPrice Float
-  productId  String
-  orderId    String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: NoAction)
-  product    Product  @relation(fields: [productId], references: [id], onDelete: NoAction)
+  unitPrice  Float    @default(0) @map("unitprice")
+  totalPrice Float    @default(0) @map("totalprice")
+  productId  String?  @map("productid")
+  orderId    String?  @map("orderid")
+  createdAt  DateTime @default(now()) @map("createdat")
+  updatedAt  DateTime @default(now()) @updatedAt @map("updatedat")
+  order      Order?   @relation(fields: [orderId], references: [id], onDelete: NoAction)
+  product    Product? @relation(fields: [productId], references: [id], onDelete: NoAction)
 
   @@index([orderId], map: "OrderItem_orderId_idx")
   @@index([productId], map: "OrderItem_productId_idx")
@@ -350,16 +349,16 @@ model OrderItem {
 
 model PaymentTransaction {
   id              String    @id @default(uuid())
-  orderId         String
+  orderId         String?   @map("orderid")
   method          String
   amount          Float
   status          String    @default("PENDING")
-  transactionId   String?   @unique(map: "PaymentTransaction_transactionId_key")
-  gatewayResponse String?
-  paidAt          DateTime?
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  order           Order     @relation(fields: [orderId], references: [id], onDelete: NoAction)
+  transactionId   String?   @map("transactionid")
+  gatewayResponse String?   @map("gatewayresponse")
+  paidAt          DateTime? @map("paidat")
+  createdAt       DateTime  @default(now()) @map("createdat")
+  updatedAt       DateTime  @default(now()) @updatedAt @map("updatedat")
+  order           Order?    @relation(fields: [orderId], references: [id], onDelete: NoAction)
 
   @@index([orderId], map: "PaymentTransaction_orderId_idx")
   @@map("paymenttransaction")
@@ -369,21 +368,21 @@ model ProductImage {
   id        String   @id @default(uuid())
   url       String
   alt       String?
-  sortOrder Int      @default(0)
-  isCover   Boolean  @default(false)
-  productId String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction)
+  sortOrder Int      @default(0) @map("sortorder")
+  isCover   Boolean  @default(false) @map("iscover")
+  productId String?  @map("productid")
+  createdAt DateTime @default(now()) @map("createdat")
+  updatedAt DateTime @default(now()) @updatedAt @map("updatedat")
+  product   Product? @relation(fields: [productId], references: [id], onDelete: NoAction)
 
   @@index([productId], map: "ProductImage_productId_idx")
   @@map("productimage")
 }
 
 model ProductRelation {
-  productAId                                  String
-  productBId                                  String
-  createdAt                                   DateTime @default(now())
+  productAId                                  String   @map("productaid")
+  productBId                                  String   @map("productbid")
+  createdAt                                   DateTime @default(now()) @map("createdat")
   product_productrelation_productAIdToproduct Product  @relation("productrelation_productAIdToproduct", fields: [productAId], references: [id], onDelete: NoAction)
   product_productrelation_productBIdToproduct Product  @relation("productrelation_productBIdToproduct", fields: [productBId], references: [id], onDelete: NoAction)
 
@@ -398,15 +397,14 @@ model ProductReview {
   title     String?
   comment   String?
   status    String    @default("PENDING")
-  userId    String
-  productId String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
+  userId    String    @map("userid")
+  productId String    @map("productid")
+  createdAt DateTime  @default(now()) @map("createdat")
+  updatedAt DateTime  @default(now()) @updatedAt @map("updatedat")
+  deletedAt DateTime? @map("deletedat")
   product   Product   @relation(fields: [productId], references: [id], onDelete: NoAction)
   user      User      @relation(fields: [userId], references: [id], onDelete: NoAction)
 
-  @@unique([userId, productId], map: "ProductReview_userId_productId_key")
   @@index([productId], map: "ProductReview_productId_idx")
   @@map("productreview")
 }
@@ -414,19 +412,19 @@ model ProductReview {
 model ProductTag {
   id        String   @id @default(uuid())
   name      String
-  productId String
-  createdAt DateTime @default(now())
-  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction)
+  productId String?  @map("productid")
+  createdAt DateTime @default(now()) @map("createdat")
+  updatedAt DateTime @default(now()) @updatedAt @map("updatedat")
+  product   Product? @relation(fields: [productId], references: [id], onDelete: NoAction)
 
-  @@unique([name, productId], map: "ProductTag_name_productId_key")
   @@index([productId], map: "ProductTag_productId_idx")
   @@map("producttag")
 }
 
 model RolePermission {
-  roleId       String
-  permissionId String
-  createdAt    DateTime   @default(now())
+  roleId       String     @map("roleid")
+  permissionId String     @map("permissionid")
+  createdAt    DateTime   @default(now()) @map("createdat")
   permission   Permission @relation(fields: [permissionId], references: [id], onDelete: NoAction)
   role         Role       @relation(fields: [roleId], references: [id], onDelete: NoAction)
 
@@ -440,8 +438,8 @@ model Setting {
   key       String   @unique(map: "Setting_key_key")
   value     String
   group     String   @default("general")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("createdat")
+  updatedAt DateTime @default(now()) @updatedAt @map("updatedat")
 
   @@map("setting")
 }
@@ -449,21 +447,21 @@ model Setting {
 model Upload {
   id           String   @id @default(uuid())
   filename     String
-  originalName String
-  mimeType     String
+  originalName String   @default("") @map("originalname")
+  mimeType     String   @default("application/octet-stream") @map("mimetype")
   size         Int
   path         String
   url          String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  createdAt    DateTime @default(now()) @map("createdat")
+  updatedAt    DateTime @default(now()) @updatedAt @map("updatedat")
 
   @@map("upload")
 }
 
 model UserRoleAssignment {
-  userId    String
-  roleId    String
-  createdAt DateTime @default(now())
+  userId    String   @map("userid")
+  roleId    String   @map("roleid")
+  createdAt DateTime @default(now()) @map("createdat")
   role      Role     @relation(fields: [roleId], references: [id], onDelete: NoAction)
   user      User     @relation(fields: [userId], references: [id], onDelete: NoAction)
 
@@ -474,13 +472,12 @@ model UserRoleAssignment {
 
 model WishlistItem {
   id        String   @id @default(uuid())
-  userId    String
-  productId String
-  createdAt DateTime @default(now())
+  userId    String   @map("userid")
+  productId String   @map("productid")
+  createdAt DateTime @default(now()) @map("createdat")
   product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction)
   user      User     @relation(fields: [userId], references: [id], onDelete: NoAction)
 
-  @@unique([userId, productId], map: "WishlistItem_userId_productId_key")
   @@index([productId], map: "WishlistItem_productId_idx")
   @@map("wishlistitem")
 }
