@@ -14,7 +14,18 @@ const app = express();
 
 app.use(helmet());
 app.use(compression());
-app.use(cors({ origin: "*", credentials: true }));
+import cors from 'cors';
+
+// Permite requisições de localhost (desenvolvimento) e Vercel (produção)
+app.use(cors({
+  origin: true, // Aceita automaticamente qualquer origem requisitante
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+}));
+
+// Garante que requisições prévias (preflight/OPTIONS) respondam com status 200/204
+app.options('*', cors());
 
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
