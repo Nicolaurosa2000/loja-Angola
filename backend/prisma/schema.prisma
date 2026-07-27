@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -74,11 +75,11 @@ model Category {
   createdAt       DateTime   @default(now())
   updatedAt       DateTime   @updatedAt
   deletedAt       DateTime?
-  parent          Category?  @relation("CategoryParent", fields: [parentId], references: [id], map: "Category_parentId_fkey")
+  parent          Category?  @relation("CategoryParent", fields: [parentId], references: [id])
   children        Category[] @relation("CategoryParent")
   products        Product[]
 
-  @@index([parentId], map: "Category_parentId_fkey")
+  @@index([parentId], map: "Category_parentId_idx")
   @@map("category")
 }
 
@@ -128,8 +129,8 @@ model Product {
   deletedAt                                           DateTime?
   cartItem                                            CartItem[]
   orderItem                                           OrderItem[]
-  brand                                               Brand?            @relation(fields: [brandId], references: [id], map: "Product_brandId_fkey")
-  category                                            Category          @relation(fields: [categoryId], references: [id], onDelete: NoAction, map: "Product_categoryId_fkey")
+  brand                                               Brand?            @relation(fields: [brandId], references: [id])
+  category                                            Category          @relation(fields: [categoryId], references: [id], onDelete: NoAction)
   images                                              ProductImage[]
   productrelation_productrelation_productAIdToproduct ProductRelation[] @relation("productrelation_productAIdToproduct")
   productrelation_productrelation_productBIdToproduct ProductRelation[] @relation("productrelation_productBIdToproduct")
@@ -159,10 +160,10 @@ model Address {
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   deletedAt    DateTime?
-  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction, map: "Address_userId_fkey")
+  user         User      @relation(fields: [userId], references: [id], onDelete: NoAction)
   order        Order[]
 
-  @@index([userId], map: "Address_userId_fkey")
+  @@index([userId], map: "Address_userId_idx")
   @@map("address")
 }
 
@@ -176,7 +177,7 @@ model AuditLog {
   userAgent  String?
   userId     String?
   createdAt  DateTime @default(now())
-  user       User?    @relation(fields: [userId], references: [id], map: "AuditLog_userId_fkey")
+  user       User?    @relation(fields: [userId], references: [id])
 
   @@index([action], map: "AuditLog_action_idx")
   @@index([resource, resourceId], map: "AuditLog_resource_resourceId_idx")
@@ -207,11 +208,11 @@ model Cart {
   couponId  String?
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
-  coupon    Coupon?    @relation(fields: [couponId], references: [id], map: "Cart_couponId_fkey")
-  user      User?      @relation(fields: [userId], references: [id], map: "Cart_userId_fkey")
+  coupon    Coupon?    @relation(fields: [couponId], references: [id])
+  user      User?      @relation(fields: [userId], references: [id])
   items     CartItem[]
 
-  @@index([couponId], map: "Cart_couponId_fkey")
+  @@index([couponId], map: "Cart_couponId_idx")
   @@map("cart")
 }
 
@@ -222,11 +223,11 @@ model CartItem {
   productId String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: NoAction, map: "CartItem_cartId_fkey")
-  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction, map: "CartItem_productId_fkey")
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: NoAction)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction)
 
   @@unique([cartId, productId], map: "CartItem_cartId_productId_key")
-  @@index([productId], map: "CartItem_productId_fkey")
+  @@index([productId], map: "CartItem_productId_idx")
   @@map("cartitem")
 }
 
@@ -259,13 +260,13 @@ model CouponUsage {
   userId    String
   orderId   String?
   createdAt DateTime @default(now())
-  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: NoAction, map: "CouponUsage_couponId_fkey")
-  order     Order?   @relation(fields: [orderId], references: [id], map: "CouponUsage_orderId_fkey")
-  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction, map: "CouponUsage_userId_fkey")
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: NoAction)
+  order     Order?   @relation(fields: [orderId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction)
 
-  @@index([couponId], map: "CouponUsage_couponId_fkey")
-  @@index([orderId], map: "CouponUsage_orderId_fkey")
-  @@index([userId], map: "CouponUsage_userId_fkey")
+  @@index([couponId], map: "CouponUsage_couponId_idx")
+  @@index([orderId], map: "CouponUsage_orderId_idx")
+  @@index([userId], map: "CouponUsage_userId_idx")
   @@map("couponusage")
 }
 
@@ -303,13 +304,13 @@ model Order {
   updatedAt      DateTime             @updatedAt
   deletedAt      DateTime?
   couponusage    CouponUsage[]
-  address        Address?             @relation(fields: [addressId], references: [id], map: "Order_addressId_fkey")
-  user           User                 @relation(fields: [userId], references: [id], onDelete: NoAction, map: "Order_userId_fkey")
+  address        Address?             @relation(fields: [addressId], references: [id])
+  user           User                 @relation(fields: [userId], references: [id], onDelete: NoAction)
   discounts      OrderDiscount[]
   items          OrderItem[]
   payments       PaymentTransaction[]
 
-  @@index([addressId], map: "Order_addressId_fkey")
+  @@index([addressId], map: "Order_addressId_idx")
   @@index([orderNumber], map: "Order_orderNumber_idx")
   @@index([status], map: "Order_status_idx")
   @@index([userId], map: "Order_userId_idx")
@@ -322,11 +323,11 @@ model OrderDiscount {
   orderId   String
   amount    Float
   createdAt DateTime @default(now())
-  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: NoAction, map: "OrderDiscount_couponId_fkey")
-  order     Order    @relation(fields: [orderId], references: [id], onDelete: NoAction, map: "OrderDiscount_orderId_fkey")
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: NoAction)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: NoAction)
 
-  @@index([couponId], map: "OrderDiscount_couponId_fkey")
-  @@index([orderId], map: "OrderDiscount_orderId_fkey")
+  @@index([couponId], map: "OrderDiscount_couponId_idx")
+  @@index([orderId], map: "OrderDiscount_orderId_idx")
   @@map("orderdiscount")
 }
 
@@ -339,11 +340,11 @@ model OrderItem {
   orderId    String
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
-  order      Order    @relation(fields: [orderId], references: [id], onDelete: NoAction, map: "OrderItem_orderId_fkey")
-  product    Product  @relation(fields: [productId], references: [id], onDelete: NoAction, map: "OrderItem_productId_fkey")
+  order      Order    @relation(fields: [orderId], references: [id], onDelete: NoAction)
+  product    Product  @relation(fields: [productId], references: [id], onDelete: NoAction)
 
-  @@index([orderId], map: "OrderItem_orderId_fkey")
-  @@index([productId], map: "OrderItem_productId_fkey")
+  @@index([orderId], map: "OrderItem_orderId_idx")
+  @@index([productId], map: "OrderItem_productId_idx")
   @@map("orderitem")
 }
 
@@ -358,9 +359,9 @@ model PaymentTransaction {
   paidAt          DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
-  order           Order     @relation(fields: [orderId], references: [id], onDelete: NoAction, map: "PaymentTransaction_orderId_fkey")
+  order           Order     @relation(fields: [orderId], references: [id], onDelete: NoAction)
 
-  @@index([orderId], map: "PaymentTransaction_orderId_fkey")
+  @@index([orderId], map: "PaymentTransaction_orderId_idx")
   @@map("paymenttransaction")
 }
 
@@ -373,9 +374,9 @@ model ProductImage {
   productId String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction, map: "ProductImage_productId_fkey")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction)
 
-  @@index([productId], map: "ProductImage_productId_fkey")
+  @@index([productId], map: "ProductImage_productId_idx")
   @@map("productimage")
 }
 
@@ -383,11 +384,11 @@ model ProductRelation {
   productAId                                  String
   productBId                                  String
   createdAt                                   DateTime @default(now())
-  product_productrelation_productAIdToproduct Product  @relation("productrelation_productAIdToproduct", fields: [productAId], references: [id], onDelete: NoAction, map: "ProductRelation_productAId_fkey")
-  product_productrelation_productBIdToproduct Product  @relation("productrelation_productBIdToproduct", fields: [productBId], references: [id], onDelete: NoAction, map: "ProductRelation_productBId_fkey")
+  product_productrelation_productAIdToproduct Product  @relation("productrelation_productAIdToproduct", fields: [productAId], references: [id], onDelete: NoAction)
+  product_productrelation_productBIdToproduct Product  @relation("productrelation_productBIdToproduct", fields: [productBId], references: [id], onDelete: NoAction)
 
   @@id([productAId, productBId])
-  @@index([productBId], map: "ProductRelation_productBId_fkey")
+  @@index([productBId], map: "ProductRelation_productBId_idx")
   @@map("productrelation")
 }
 
@@ -402,11 +403,11 @@ model ProductReview {
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
-  product   Product   @relation(fields: [productId], references: [id], onDelete: NoAction, map: "ProductReview_productId_fkey")
-  user      User      @relation(fields: [userId], references: [id], onDelete: NoAction, map: "ProductReview_userId_fkey")
+  product   Product   @relation(fields: [productId], references: [id], onDelete: NoAction)
+  user      User      @relation(fields: [userId], references: [id], onDelete: NoAction)
 
   @@unique([userId, productId], map: "ProductReview_userId_productId_key")
-  @@index([productId], map: "ProductReview_productId_fkey")
+  @@index([productId], map: "ProductReview_productId_idx")
   @@map("productreview")
 }
 
@@ -415,10 +416,10 @@ model ProductTag {
   name      String
   productId String
   createdAt DateTime @default(now())
-  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction, map: "ProductTag_productId_fkey")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction)
 
   @@unique([name, productId], map: "ProductTag_name_productId_key")
-  @@index([productId], map: "ProductTag_productId_fkey")
+  @@index([productId], map: "ProductTag_productId_idx")
   @@map("producttag")
 }
 
@@ -426,11 +427,11 @@ model RolePermission {
   roleId       String
   permissionId String
   createdAt    DateTime   @default(now())
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: NoAction, map: "RolePermission_permissionId_fkey")
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: NoAction, map: "RolePermission_roleId_fkey")
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: NoAction)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: NoAction)
 
   @@id([roleId, permissionId])
-  @@index([permissionId], map: "RolePermission_permissionId_fkey")
+  @@index([permissionId], map: "RolePermission_permissionId_idx")
   @@map("rolepermission")
 }
 
@@ -463,11 +464,11 @@ model UserRoleAssignment {
   userId    String
   roleId    String
   createdAt DateTime @default(now())
-  role      Role     @relation(fields: [roleId], references: [id], onDelete: NoAction, map: "UserRoleAssignment_roleId_fkey")
-  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction, map: "UserRoleAssignment_userId_fkey")
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: NoAction)
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction)
 
   @@id([userId, roleId])
-  @@index([roleId], map: "UserRoleAssignment_roleId_fkey")
+  @@index([roleId], map: "UserRoleAssignment_roleId_idx")
   @@map("userroleassignment")
 }
 
@@ -476,10 +477,10 @@ model WishlistItem {
   userId    String
   productId String
   createdAt DateTime @default(now())
-  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction, map: "WishlistItem_productId_fkey")
-  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction, map: "WishlistItem_userId_fkey")
+  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction)
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction)
 
   @@unique([userId, productId], map: "WishlistItem_userId_productId_key")
-  @@index([productId], map: "WishlistItem_productId_fkey")
+  @@index([productId], map: "WishlistItem_productId_idx")
   @@map("wishlistitem")
 }
