@@ -68,12 +68,17 @@ export class DashboardService {
       take: limit,
       where: {
         order: { deletedAt: null },
+        productId: { not: null }, // Garante que apenas itens vinculados a produtos válidos sejam consultados
       },
     });
 
     if (items.length === 0) return [];
 
-    const productIds = items.map((i) => i.productId);
+    // Filtra os IDs garantindo que sejam estritamente strings (removendo nulls)
+    const productIds = items
+      .map((i) => i.productId)
+      .filter((id): id is string => id !== null);
+
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
       select: { id: true, name: true, price: true, images: { take: 1, select: { url: true } } },
@@ -81,11 +86,13 @@ export class DashboardService {
 
     const productMap = new Map(products.map((p) => [p.id, p]));
 
-    return items.map((item) => ({
-      product: productMap.get(item.productId) || null,
-      totalSold: item._sum.quantity ?? 0,
-      orderCount: item._count.productId,
-    }));
+    return items
+      .filter((item) => item.productId !== null)
+      .map((item) => ({
+        product: productMap.get(item.productId!) || null,
+        totalSold: item._sum.quantity ?? 0,
+        orderCount: item._count.productId,
+      }));
   }
 
   async salesByPeriod(startDate: string, endDate: string) {

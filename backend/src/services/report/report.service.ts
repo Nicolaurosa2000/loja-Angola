@@ -14,6 +14,7 @@ export class ReportService {
         by: ['productId'],
         _sum: { quantity: true, totalPrice: true },
         where: {
+          productId: { not: null },
           order: { deletedAt: null, ...where },
         },
         orderBy: { _sum: { totalPrice: 'desc' } },
@@ -22,7 +23,11 @@ export class ReportService {
 
       if (items.length === 0) return [];
 
-      const productIds = items.map(i => i.productId);
+      // Filtra estritamente apenas strings para o array
+      const productIds = items
+        .map(i => i.productId)
+        .filter((id): id is string => id !== null);
+
       const products = await prisma.product.findMany({
         where: { id: { in: productIds } },
         select: { id: true, name: true, sku: true },
@@ -30,13 +35,16 @@ export class ReportService {
 
       const productMap = new Map(products.map(p => [p.id, p]));
 
-      return items.map(item => ({
-        productId: item.productId,
-        productName: productMap.get(item.productId)?.name ?? 'Unknown',
-        sku: productMap.get(item.productId)?.sku ?? '',
-        totalQuantity: item._sum.quantity ?? 0,
-        totalRevenue: item._sum.totalPrice ?? 0,
-      }));
+      return items.map(item => {
+        const product = item.productId ? productMap.get(item.productId) : undefined;
+        return {
+          productId: item.productId,
+          productName: product?.name ?? 'Unknown',
+          sku: product?.sku ?? '',
+          totalQuantity: item._sum.quantity ?? 0,
+          totalRevenue: item._sum.totalPrice ?? 0,
+        };
+      });
     } catch (error) {
       return [];
     }
@@ -44,7 +52,7 @@ export class ReportService {
 
   async customerOrders(startDate?: string, endDate?: string) {
     try {
-      const where: any = { deletedAt: null };
+      const where: any = { deletedAt: null, userId: { not: null } };
       if (startDate || endDate) {
         where.createdAt = {};
         if (startDate) where.createdAt.gte = new Date(startDate);
@@ -62,7 +70,11 @@ export class ReportService {
 
       if (result.length === 0) return [];
 
-      const userIds = result.map(r => r.userId);
+      // Filtra estritamente apenas strings para o array
+      const userIds = result
+        .map(r => r.userId)
+        .filter((id): id is string => id !== null);
+
       const users = await prisma.user.findMany({
         where: { id: { in: userIds } },
         select: { id: true, name: true, email: true },
@@ -70,14 +82,17 @@ export class ReportService {
 
       const userMap = new Map(users.map(u => [u.id, u]));
 
-      return result.map(item => ({
-        userId: item.userId,
-        customerName: userMap.get(item.userId)?.name ?? 'Unknown',
-        customerEmail: userMap.get(item.userId)?.email ?? '',
-        totalOrders: item._count.id,
-        totalSpent: item._sum.total ?? 0,
-        averageOrderValue: item._count.id > 0 ? (item._sum.total ?? 0) / item._count.id : 0,
-      }));
+      return result.map(item => {
+        const user = item.userId ? userMap.get(item.userId) : undefined;
+        return {
+          userId: item.userId,
+          customerName: user?.name ?? 'Unknown',
+          customerEmail: user?.email ?? '',
+          totalOrders: item._count.id,
+          totalSpent: item._sum.total ?? 0,
+          averageOrderValue: item._count.id > 0 ? (item._sum.total ?? 0) / item._count.id : 0,
+        };
+      });
     } catch (error) {
       return [];
     }
