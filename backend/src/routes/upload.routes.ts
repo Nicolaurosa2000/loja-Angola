@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import { authenticate, authorize } from '../middlewares/auth';
 import { UploadController } from '../controllers/upload.controller';
+import { upload } from '../services/upload/upload.service';
 
 const router = Router();
-const uploadCtrl = new UploadController();
+const uploadController = new UploadController();
 
-router.post('/', authenticate, authorize('ADMIN', 'STAFF'), uploadCtrl.upload);
-router.delete('/:id', authenticate, authorize('ADMIN', 'STAFF'), uploadCtrl.delete);
+router.post('/', upload.single('file'), uploadController.upload);
+router.delete('/:id', uploadController.delete);
 
-export default router;
+export default router; 

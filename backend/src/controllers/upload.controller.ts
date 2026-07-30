@@ -1,21 +1,27 @@
 import { Request, Response, NextFunction } from 'express';
-import { uploadService, upload } from '../services/upload/upload.service';
+import { uploadService } from '../services/upload/upload.service';
 import { sendSuccess, sendCreated } from '../utils/api-response';
 
 export class UploadController {
   upload = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      upload.single('file')(req, res, async (err) => {
-        if (err) return next(err);
-        if (!req.file) return next(new Error('No file provided'));
+      // 1. Recebe o ficheiro na memória através do middleware de upload (Multer memoryStorage)
+      if (!req.file) {
+        return next(new Error('Nenhum ficheiro fornecido'));
+      }
 
-        if (req.file.mimetype.startsWith('image/')) {
-          await uploadService.processImage(req.file.path, req.file.filename);
-        }
+      // 2. Envia o buffer para o Supabase Storage
+      const publicUrl = await uploadService.uploadToSupabase(req.file);
 
-        const record = await uploadService.saveRecord(req.file);
-        sendCreated(res, record, 'File uploaded');
+      // 3. Salva o registo no banco com a URL pública gerada pelo Supabase
+      const record = await uploadService.saveRecord({
+        filename: req.file.originalname,
+        mimeType: req.file.mimetype,
+        size: req.file.size,
+        url: publicUrl, // 👈 Guarda a URL permanente do Supabase
       });
+
+      sendCreated(res, record, 'Ficheiro carregado com sucesso no Supabase');
     } catch (error) {
       next(error);
     }
@@ -23,8 +29,9 @@ export class UploadController {
 
   delete = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
-      await uploadService.deleteRecord(req.params.id);
-      sendSuccess(res, null, 'File deleted');
+      // Apaga do Supabase e depois do banco de dados
+      await uploadService.deleteFromSupabaseAndDb(req.params.id);
+      sendSuccess(res, null, 'Ficheiro eliminado com sucesso');
     } catch (error) {
       next(error);
     }

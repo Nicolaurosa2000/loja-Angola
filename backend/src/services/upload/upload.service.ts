@@ -1,83 +1,68 @@
 import multer from 'multer';
-import path from 'path';
-import sharp from 'sharp';
-import { v4 as uuidv4 } from 'uuid';
-import { appConfig } from '../../config/app';
-import { prisma } from '../../config/database';
-import { AppError } from '../../middlewares';
+import { createClient } from '@supabase/supabase-js';
+import { prisma } from '../../config/prisma'; // Adapte o caminho do seu Prisma Client
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => {
-    cb(null, appConfig.upload.dir);
-  },
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const name = `${uuidv4()}${ext}`;
-    cb(null, name);
-  },
-});
-
-const fileFilter = (_req: any, file: Express.Multer.File, cb: multer.FileFilterCallback) => {
-  const allowedMimes = [
-    'image/jpeg',
-    'image/png',
-    'image/webp',
-    'image/gif',
-    'application/pdf',
-    'video/mp4',
-    'video/webm',
-  ];
-
-  if (allowedMimes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(new Error('Invalid file type'));
-  }
-};
-
+// Configura o Multer para armazenar na memória em vez do disco
 export const upload = multer({
-  storage,
-  fileFilter,
-  limits: { fileSize: appConfig.upload.maxFileSize },
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB
 });
 
-export class UploadService {
-  async processImage(filePath: string, filename: string): Promise<void> {
-    const ext = path.extname(filename).toLowerCase();
-    if (['.jpg', '.jpeg', '.png', '.webp'].includes(ext)) {
-      const outputPath = filePath.replace(ext, '_optimized.webp');
-      await sharp(filePath)
-        .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
-        .webp({ quality: 80 })
-        .toFile(outputPath);
+// Inicialização do Supabase
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_KEY!;
+export const supabase = createClient(supabaseUrl, supabaseKey);
+
+class UploadService {
+  private bucketName = 'products'; // Nome do bucket que criou no Supabase
+
+  async uploadToSupabase(file: Express.Multer.File): Promise<string> {
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${fileExt}`;
+    const filePath = `uploads/${fileName}`;
+
+    // Upload do Buffer para o Supabase Storage
+    const { error } = await supabase.storage
+      .from(this.bucketName)
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: true,
+      });
+
+    if (error) {
+      throw new Error(`Erro no Supabase Storage: ${error.message}`);
     }
+
+    // Retorna a URL pública do ficheiro
+    const { data } = supabase.storage
+      .from(this.bucketName)
+      .getPublicUrl(filePath);
+
+    return data.publicUrl;
   }
 
-  async saveRecord(file: Express.Multer.File): Promise<{
-    id: string;
-    url: string;
-    filename: string;
-  }> {
-    const record = await prisma.upload.create({
+  async saveRecord(data: { filename: string; mimeType: string; size: number; url: string }) {
+    // Salva a referência na sua base de dados
+    return await prisma.media.create({
       data: {
-        filename: file.filename,
-        originalName: file.originalname,
-        mimeType: file.mimetype,
-        size: file.size,
-        path: file.path,
-        url: `/uploads/${file.filename}`,
+        filename: data.filename,
+        mimeType: data.mimeType,
+        size: data.size,
+        url: data.url,
       },
     });
-
-    return {
-      id: record.id,
-      url: record.url,
-      filename: record.filename,
-    };
   }
 
-  async deleteRecord(id: string): Promise<void> {
-    await prisma.upload.delete({ where: { id } });
+  async deleteFromSupabaseAndDb(id: string) {
+    const record = await prisma.media.findUnique({ where: { id } });
+    if (!record) throw new Error('Ficheiro não encontrado');
+
+    const urlParts = record.url.split(`${this.bucketName}/`);
+    if (urlParts.length > 1) {
+      await supabase.storage.from(this.bucketName).remove([urlParts[1]]);
+    }
+
+    return await prisma.media.delete({ where: { id } });
   }
 }
 
