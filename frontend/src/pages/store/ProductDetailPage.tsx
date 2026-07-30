@@ -6,7 +6,7 @@ import { productService } from "../../services/product.service";
 import { wishlistService } from "../../services/wishlist.service";
 import { useAuth } from "../../contexts/AuthContext";
 import { useCart } from "../../contexts/CartContext";
-import { formatCurrency } from "../../utils/format";
+import { formatCurrency, getImageUrl } from "../../utils/format"; // 1. IMPORTADO AQUI
 
 export default function ProductDetailPage() {
   const { slug } = useParams<{ slug: string }>();
@@ -90,7 +90,7 @@ export default function ProductDetailPage() {
       <SEO
         title={product.name}
         description={product.description}
-        image={product.images?.[0]?.url}
+        image={getImageUrl(product.images?.[0]?.url)}
         type="product"
       />
       <div className="container-custom py-8 lg:py-10">
@@ -98,8 +98,9 @@ export default function ProductDetailPage() {
           <div>
             <div className="mb-4 overflow-hidden rounded-3xl border border-slate-200 bg-slate-100">
               {product.images?.[selectedImage] ? (
+                /* 2. IMAGEM PRINCIPAL COM getImageUrl */
                 <img
-                  src={product.images[selectedImage].url}
+                  src={getImageUrl(product.images[selectedImage].url)}
                   alt={product.images[selectedImage].alt || product.name}
                   className="h-full w-full object-cover"
                 />
@@ -121,8 +122,9 @@ export default function ProductDetailPage() {
                         : "border-slate-200"
                     }`}
                   >
+                    {/* 3. MINIATURAS COM getImageUrl */}
                     <img
-                      src={image.url}
+                      src={getImageUrl(image.url)}
                       alt={image.alt || ""}
                       className="h-full w-full object-cover"
                     />

@@ -1,5 +1,6 @@
 import { useState, useRef } from "react";
 import api from "../services/api";
+import { getImageUrl } from "../utils/format"; // Ajuste o caminho do seu arquivo format/utils se necessário
 
 export interface UploadedImage {
   id: string;
@@ -36,6 +37,7 @@ export default function ImageUploader({
     }
 
     setIsUploading(true);
+    let updatedImages = [...images];
 
     try {
       for (const file of filesToUpload) {
@@ -49,11 +51,12 @@ export default function ImageUploader({
         const newImage: UploadedImage = {
           id: response.data.data.id,
           url: response.data.data.url,
-          isCover: images.length === 0, // Primeira imagem é capa por padrão
-          order: images.length,
+          isCover: updatedImages.length === 0, // Primeira imagem é capa por padrão
+          order: updatedImages.length,
         };
 
-        onImagesChange([...images, newImage]);
+        updatedImages = [...updatedImages, newImage];
+        onImagesChange(updatedImages);
       }
     } catch (error) {
       console.error("Erro ao fazer upload:", error);
@@ -195,8 +198,9 @@ export default function ImageUploader({
                     : "border-gray-200"
                 } ${dragOver && draggedIndex !== null ? "border-primary-600 border-dashed" : ""}`}
               >
+                {/* AQUI FOI ALTERADO: uso do getImageUrl(...) */}
                 <img
-                  src={image.url}
+                  src={getImageUrl(image.url)}
                   alt={`Produto ${index + 1}`}
                   className="w-full h-28 object-cover"
                 />

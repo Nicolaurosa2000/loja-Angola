@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import SEO from "../../components/SEO";
 import { productService } from "../../services/product.service";
-import { formatCurrency } from "../../utils/format";
+import { formatCurrency, getImageUrl } from "../../utils/format"; // 1. IMPORTADO getImageUrl AQUI
 
 export default function HomePage() {
   return (
@@ -88,8 +88,9 @@ function HomeContent() {
             >
               <div className="relative aspect-square overflow-hidden bg-slate-100">
                 {product.images?.[0] ? (
+                  /* 2. ALTERADO AQUI: USO DO getImageUrl(...) */
                   <img
-                    src={product.images[0].url}
+                    src={getImageUrl(product.images[0].url)}
                     alt={product.images[0].alt || product.name}
                     className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
                   />

@@ -21,7 +21,13 @@ const queryClient = new QueryClient({
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <HelmetProvider>
-      <BrowserRouter>
+      {/* Adicionadas as flags para evitar os avisos de deprecação do v7 */}
+      <BrowserRouter
+        future={{
+          v7_startTransition: true,
+          v7_relativeSplatPath: true,
+        }}
+      >
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
             <CartProvider>
