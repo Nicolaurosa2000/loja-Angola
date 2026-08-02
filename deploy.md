@@ -2,430 +2,267 @@
 
 ## Visão Geral
 
-O projecto Angola Express é uma aplicação fullstack de e-commerce composta por:
+A Angola Express é uma aplicação fullstack de e-commerce composta por:
 
-| Componente | Stack | Porta |
-|-----------|-------|-------|
-| **Frontend** | React 18 + TypeScript + Vite + Tailwind CSS + PWA | Estático (servido por Nginx) |
-| **Backend** | Node.js + Express + TypeScript + Prisma ORM | 3000 |
-| **Banco de Dados** | MySQL | 3306 |
+| Componente | Stack | Onde roda |
+|-----------|-------|-----------|
+| **Frontend** | React 18 + TypeScript + Vite + Tailwind CSS + PWA | Estático (Vercel / Render Static) |
+| **Backend** | Node.js + Express + TypeScript + Prisma ORM | Render (Web Service) |
+| **Banco de Dados** | PostgreSQL (Supabase) | Supabase (nuvem) |
+| **Imagens** | Supabase Storage (bucket público `products`) | Supabase (nuvem) |
+| **Auth** | JWT + Refresh Token + BCrypt + RBAC | Backend |
+
+O deploy é totalmente na nuvem: backend e frontend na Render/Vercel e dados (banco + imagens) no Supabase. Não é necessário VPS.
 
 ---
 
 ## Pré-requisitos
 
-- VPS com **Ubuntu 22.04 LTS** (ou similar)
-- Acesso SSH ao servidor
-- Um domínio/subdomínio apontado para o IP do servidor
-- MySQL 8.0+ instalado e configurado no servidor
-- Node.js **20.x** ou superior instalado no servidor
-- npm **10.x** ou superior
-- Git instalado no servidor
+- Conta na **Render** (https://render.com)
+- Conta no **Supabase** (https://supabase.com) com um projeto criado
+- Repositório no **GitHub** (ex.: `Nicolaurosa2000/loja-Angola`)
+- Git instalado localmente
 
 ---
 
-## Passo 1 — Preparar o Servidor
+## Passo 1 — Preparar o Supabase
 
-### 1.1 Atualizar o sistema
+### 1.1 Criar o projeto
 
-```bash
-sudo apt update && sudo apt upgrade -y
-```
+1. No dashboard do Supabase, clica em **New Project** e cria um projeto na região `eu-west-3` (Paris).
+2. Anota a **project ref** (ex.: `yvrprvnbqcdwghnidmwl`).
 
-### 1.2 Instalar dependências essenciais
+### 1.2 Obter as credenciais da base de dados
 
-```bash
-sudo apt install -y git curl build-essential wget
-```
+1. Acede a **Project Settings → Database → Connection string**.
+2. Ativa o **Connection pooling** (Supavisor).
+3. Copia a **URI de ligação** (transacional/session, porta 5432):
+   ```
+   postgresql://postgres.<ref>:<password>@aws-0-eu-west-3.pooler.supabase.com:5432/postgres?sslmode=require
+   ```
+   - `DATABASE_URL` → esta URI (usada em runtime pelo Prisma).
+   - `DIRECT_URL` → a mesma URI (ou a ligação direta se não estiveres por trás de firewall).
 
-### 1.3 Instalar Node.js 20.x
+### 1.3 Obter as credenciais do Storage
 
-```bash
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-sudo apt install -y nodejs
-```
+1. Acede a **Project Settings → API**.
+2. Copia o **Project URL** → `SUPABASE_URL` (ex.: `https://<ref>.supabase.co`).
+3. Copia a **service role / secret key** → `SUPABASE_KEY` (formato `sb_secret_...`).
 
-Verificar a instalação:
+### 1.4 Criar o bucket de imagens
 
-```bash
-node -v
-npm -v
-```
-
-### 1.4 Instalar MySQL
-
-```bash
-sudo apt install -y mysql-server
-sudo mysql_secure_installation
-```
-
-Criar o banco de dados e utilizador:
-
-```bash
-sudo mysql -u root -p
-```
-
-```sql
-CREATE DATABASE angola_express CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER 'angola_express'@'localhost' IDENTIFIED BY 'SUA_SENHA_SEGURA_AQUI';
-GRANT ALL PRIVILEGES ON angola_express.* TO 'angola_express'@'localhost';
-FLUSH PRIVILEGES;
-EXIT;
-```
+1. Acede a **Storage → New bucket**.
+2. Nome: `products`.
+3. **Importante:** ativa **Public bucket** (as imagens são servidas sem autenticação).
 
 ---
 
-## Passo 2 — Clonar o Repositório
+## Passo 2 — Configurar o Backend Localmente
 
-```bash
-cd /var/www
-git clone https://github.com/seu-usuario/angola-express.git
-cd angola-express
-```
-
-Ou, se pretende usar uma pasta diferente:
-
-```bash
-sudo mkdir -p /opt/angola-express
-sudo chown -R $USER:$USER /opt/angola-express
-cd /opt/angola-express
-git clone https://github.com/seu-usuario/angola-express.git .
-```
-
----
-
-## Passo 3 — Configurar o Backend
-
-### 3.1 Instalar dependências do backend
+### 2.1 Instalar dependências
 
 ```bash
 cd backend
 npm install
 ```
 
-### 3.2 Criar o ficheiro `.env`
+### 2.2 Criar o ficheiro `.env`
 
-Copie o ficheiro de exemplo e adapte para produção:
+Copia o `.env.example` e preenche com os valores do Supabase (Passo 1):
 
 ```bash
 cp .env.example .env
 ```
 
-Edite o `.env` com os valores de produção:
-
 ```env
-NODE_ENV=production
+NODE_ENV=development
 PORT=3000
 API_PREFIX=/api
-DATABASE_URL="mysql://angola_express:SUA_SENHA_SEGURA_AQUI@localhost:3306/angola_express"
-JWT_SECRET=COLOQUE_UMA_SECRET_LONGA_E_UNICA_AQUI
+
+DATABASE_URL="postgresql://postgres.<ref>:<password>@aws-0-eu-west-3.pooler.supabase.com:5432/postgres?sslmode=require"
+DIRECT_URL="postgresql://postgres.<ref>:<password>@aws-0-eu-west-3.pooler.supabase.com:5432/postgres?sslmode=require"
+
+JWT_SECRET=gerar-secret-longa
 JWT_EXPIRES_IN=15m
-JWT_REFRESH_SECRET=COLOQUE_OUTRA_SECRET_LONGA_E_UNICA_AQUI
+JWT_REFRESH_SECRET=gerar-outra-secret-longa
 JWT_REFRESH_EXPIRES_IN=7d
-CORS_ORIGIN=https://seu-dominio.com
+
+SUPABASE_URL=https://<ref>.supabase.co
+SUPABASE_KEY=sb_secret_...
+
+CORS_ORIGIN=http://localhost:5173
 UPLOAD_DIR=./uploads
 MAX_FILE_SIZE=10485760
 BCRYPT_SALT_ROUNDS=12
 RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX_REQUESTS=100
+RATE_LIMIT_MAX_REQUESTS=300
+AUTH_RATE_LIMIT_WINDOW_MS=900000
+AUTH_RATE_LIMIT_MAX_REQUESTS=30
 ```
 
-**Nota:** Nunca commite o ficheiro `.env` ao repositório — ele já está no `.gitignore`.
+> **Nota:** o ficheiro `.env` está no `.gitignore` e **nunca** deve ser commitado.
 
-### 3.3 Gerar o client Prisma e migrar o banco
+### 2.3 Aplicar as migrations e popular com dados (opcional)
 
 ```bash
-npx prisma generate
-npx prisma migrate deploy
+npx prisma migrate deploy   # aplica as migrations ao Supabase
+npx tsx src/database/seed/index.ts  # popula dados de exemplo
 ```
 
-### 3.4 (Opcional — Popular com dados iniciais)
-
-Se precisar de dados seed para o ambiente de produção:
-
-```bash
-npx tsx src/database/seed/index.ts
-```
-
-### 3.5 Compilar o backend
+### 2.4 Testar localmente
 
 ```bash
 npm run build
-```
-
-Isto gera a pasta `dist/` com o código compilado em JavaScript.
-
----
-
-## Passo 4 — Configurar o Frontend
-
-### 4.1 Instalar dependências do frontend
-
-```bash
-cd ../frontend
-npm install
-```
-
-### 4.2 Construir o frontend para produção
-
-```bash
-npm run build
-```
-
-Isto gera a pasta `dist/` com os ficheiros estáticos (HTML, CSS, JS).
-
----
-
-## Passo 5 — Configurar Nginx como Reverse Proxy
-
-### 5.1 Instalar Nginx
-
-```bash
-sudo apt install -y nginx
-```
-
-### 5.2 Criar a configuração do servidor
-
-```bash
-sudo nano /etc/nginx/sites-available/angola-express
-```
-
-Cole a seguinte configuração (substitua `seu-dominio.com` pelo seu domínio real):
-
-```nginx
-server {
-    listen 80;
-    server_name seu-dominio.com www.seu-dominio.com;
-
-    root /var/www/angola-express/frontend/dist;
-    index index.html;
-
-    # PWA — service worker precisa de cache-control adequado
-    location /sw.js {
-        add_header Cache-Control "no-cache";
-        try_files $uri =404;
-    }
-
-    location /manifest.webmanifest {
-        add_header Content-Type "application/manifest+json";
-        add_header Cache-Control "no-cache";
-        try_files $uri =404;
-    }
-
-    # Servir ficheiros estáticos do frontend
-    location / {
-        try_files $uri $uri/ /index.html;
-    }
-
-    # Servir uploads de imagens
-    location /uploads/ {
-        alias /var/www/angola-express/backend/uploads/;
-        expires 30d;
-        add_header Cache-Control "public, immutable";
-    }
-
-    # Proxy para a API do backend
-    location /api/ {
-        proxy_pass http://127.0.0.1:3000/api/;
-        proxy_http_version 1.1;
-        proxy_set_header Upgrade $http_upgrade;
-        proxy_set_header Connection 'upgrade';
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-        proxy_cache_bypass $http_upgrade;
-    }
-
-    # Documentação Swagger
-    location /api-docs {
-        proxy_pass http://127.0.0.1:3000/api-docs;
-        proxy_http_version 1.1;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-### 5.3 Ativar o site e restartar o Nginx
-
-```bash
-sudo ln -s /etc/nginx/sites-available/angola-express /etc/nginx/sites-enabled/
-sudo rm -f /etc/nginx/sites-enabled/default
-sudo nginx -t
-sudo systemctl restart nginx
-sudo systemctl enable nginx
+npm start                    # http://localhost:3000
 ```
 
 ---
 
-## Passo 6 — Configurar o Backend como Serviço do Sistema (systemd)
+## Passo 3 — Deploy do Backend na Render
 
-### 6.1 Criar o ficheiro de serviço
+### 3.1 Via Blueprint (recomendado)
 
-```bash
-sudo nano /etc/systemd/system/angola-express-backend.service
+O repositório já contém o ficheiro `render.yaml` na raiz com toda a configuração.
+
+1. Na Render: **New → Blueprint**.
+2. Liga o repositório `loja-Angola` do GitHub.
+3. A Render lê o `render.yaml` e cria o serviço `angola-express-backend`.
+4. Preenche as variáveis de ambiente marcadas como `sync: false` (ver Passo 4).
+5. Clica em **Apply**.
+
+O `render.yaml` define:
+
+```yaml
+services:
+  - type: web
+    name: angola-express-backend
+    runtime: node
+    rootDir: backend
+    plan: free
+    buildCommand: npm install --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build
+    startCommand: node dist/server.js
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars: ...
 ```
 
-Cole o seguinte conteúdo (ajuste o `User` se necessário):
+### 3.2 Via Web Service manual
 
-```ini
-[Unit]
-Description=Angola Express Backend API
-After=network.target mysql.service
+Caso prefiras criar manualmente: **New → Web Service → seleciona o repo**.
 
-[Service]
-Type=simple
-User=www-data
-WorkingDirectory=/var/www/angola-express/backend
-ExecStart=/usr/bin/node dist/server.js
-Restart=on-failure
-RestartSec=10
-Environment=NODE_ENV=production
-EnvironmentFile=/var/www/angola-express/backend/.env
+| Campo | Valor |
+|-------|-------|
+| **Root Directory** | `backend` |
+| **Environment** | Node |
+| **Build Command** | `npm install --include=dev && npx prisma generate && npx prisma migrate deploy && npm run build` |
+| **Start Command** | `node dist/server.js` |
+| **Health Check Path** | `/health` |
 
-[Install]
-WantedBy=multi-user.target
-```
+### 3.3 Notas importantes (free tier)
 
-### 6.2 Iniciar e habilitar o serviço
-
-```bash
-sudo systemctl daemon-reload
-sudo systemctl start angola-express-backend
-sudo systemctl enable angola-express-backend
-```
-
-### 6.3 Verificar o status do serviço
-
-```bash
-sudo systemctl status angola-express-backend
-```
+- O free tier **não suporta `preDeployCommand`** — por isso as migrations correm no comando de build (são idempotentes).
+- A Render define `NODE_ENV=production` durante a build, o que faz o `npm install` omitir as `devDependencies`. Por isso:
+  - O build usa `--include=dev`; e
+  - `typescript`, `prisma` e os `@types/*` vivem em `dependencies` (não `devDependencies`).
+- A versão do Node é controlada pelo campo `engines` (`>=20`) no `backend/package.json`.
 
 ---
 
-## Passo 7 — Configurar HTTPS com Certbot (SSL/TLS)
+## Passo 4 — Variáveis de Ambiente no Dashboard
 
-### 7.1 Instalar o Certbot
+No serviço `angola-express-backend` → **Environment**, define:
 
-```bash
-sudo apt install -y certbot python3-certbot-nginx
-```
+| Variável | Valor |
+|----------|-------|
+| `DATABASE_URL` | URI do pooler Supabase (com `sslmode=require`) |
+| `DIRECT_URL` | URI do pooler Supabase |
+| `SUPABASE_URL` | `https://<ref>.supabase.co` |
+| `SUPABASE_KEY` | chave `sb_secret_...` |
+| `JWT_SECRET` | gerar longa (`openssl rand -base64 48`) |
+| `JWT_REFRESH_SECRET` | gerar outra longa |
+| `CORS_ORIGIN` | URL do frontend em produção (ex.: `https://loja.vercel.app`) |
+| `NODE_ENV` | `production` (definido automaticamente) |
 
-### 7.2 Obter e instalar o certificado SSL
-
-```bash
-sudo certbot --nginx -d seu-dominio.com -d www.seu-dominio.com
-```
-
-Siga as instruções no ecrã. O Certbot configurará automaticamente o Nginx para HTTPS.
-
-### 7.3 Configurar renovação automática
-
-```bash
-sudo crontab -e
-```
-
-Adicione a seguinte linha:
-
-```
-0 3 * * * certbot renew --quiet --post-hook "systemctl reload nginx"
-```
+> **Segurança:** usa secrets reais em produção — nunca os valores de exemplo do `.env.example`. Se a chave `sb_secret` foi partilhada em algum canal, **rotaciona-a** no Supabase (Settings → API → New key).
 
 ---
 
-## Passo 8 — Configurar Permissões e Uploads
+## Passo 5 — Deploy do Frontend
 
-### 8.1 Criar o directório de uploads e dar permissões
+### 5.1 Configurar a URL da API
 
-```bash
-sudo mkdir -p /var/www/angola-express/backend/uploads
-sudo chown -R www-data:www-data /var/www/angola-express/backend/uploads
-sudo chmod -R 755 /var/www/angola-express/backend/uploads
-```
-
-### 8.2 Garantir permissões na pasta do ficheiro de log
+O frontend usa `VITE_API_URL`. No ambiente de build define:
 
 ```bash
-sudo mkdir -p /var/www/angola-express/backend/logs
-sudo chown -R www-data:www-data /var/www/angola-express/backend/logs
-sudo chmod -R 755 /var/www/angola-express/backend/logs
+VITE_API_URL=https://angola-express-backend.onrender.com/api
 ```
 
----
+Sem esta variável, os fallbacks em `frontend/src/services/api.ts` e `frontend/src/utils/format.ts` apontam para `https://angola-express-backend.onrender.com`.
 
-## Passo 9 — Testar o Deploy
-
-### 9.1 Verificar que o backend está a funcionar
-
-```bash
-curl http://localhost:3000/api/health
-```
-
-### 9.2 Verificar que o frontend está acessível
-
-Abra o browser e aceda a `https://seu-dominio.com`.
-
-### 9.3 Verificar a API docs
-
-Aceda a `https://seu-dominio.com/api-docs`.
-
-### 9.4 Verificar os logs caso haja problemas
-
-```bash
-# Logs do backend
-sudo journalctl -u angola-express-backend -f
-
-# Logs do Nginx
-sudo tail -f /var/log/nginx/error.log
-
-# Logs da aplicação backend
-tail -f /var/www/angola-express/backend/logs/*.log
-```
-
----
-
-## Passo 10 — Manutenção e Actualizações
-
-### 10.1 Actualizar o código
-
-```bash
-cd /var/www/angola-express
-git pull origin main
-```
-
-### 10.2 Actualizar dependências do backend
-
-```bash
-cd backend
-npm install
-npm run build
-sudo systemctl restart angola-express-backend
-```
-
-### 10.3 Actualizar dependências do frontend
+### 5.2 Build
 
 ```bash
 cd frontend
 npm install
-npm run build
-sudo systemctl restart nginx
+npm run build    # gera a pasta dist/
 ```
 
-### 10.4 Migrar o banco de dados
+### 5.3 Hosting
+
+- **Vercel:** importa o repo, define `VITE_API_URL`, build command `npm run build`, output `dist`.
+- **Render Static Site:** serviço estático com root `frontend`, build `npm install && npm run build`, publish `dist`.
+
+---
+
+## Passo 6 — Verificação
+
+```bash
+# 1. Health check do backend
+curl https://angola-express-backend.onrender.com/health
+# → {"success":true,"message":"API is running",...}
+
+# 2. API docs (Swagger)
+# Abrir no browser: https://angola-express-backend.onrender.com/api-docs
+
+# 3. Dados reais
+curl https://angola-express-backend.onrender.com/api/categories
+curl https://angola-express-backend.onrender.com/api/products
+
+# 4. Imagens (devem vir do Supabase Storage)
+# https://<ref>.supabase.co/storage/v1/object/public/products/uploads/<ficheiro>
+```
+
+---
+
+## Passo 7 — Manutenção
+
+### 7.1 Actualizações de código
+
+```bash
+git pull origin main        # o push para main dispara auto-deploy na Render
+```
+
+### 7.2 Alterações ao `render.yaml`
+
+A Render **não** reaplica automaticamente alterações ao `render.yaml` num serviço já existente. Depois de alterar o ficheiro:
+
+1. Faz push das alterações.
+2. Na Render: **Blueprints → o teu blueprint → Sync**.
+
+### 7.3 Novas migrations
+
+Como as migrations correm no comando de build, basta:
 
 ```bash
 cd backend
-npx prisma migrate deploy
+npx prisma migrate dev       # cria a migration localmente
+git add prisma/migrations && git commit && git push
+# a Render aplica a migration no próximo deploy
 ```
 
-### 10.5 Reiniciar todos os serviços
+### 7.4 Backups
 
-```bash
-sudo systemctl restart angola-express-backend nginx
-```
+Configura backups no Supabase (Dashboard → Database → Backups) antes de receberes dados reais.
 
 ---
 
@@ -433,35 +270,25 @@ sudo systemctl restart angola-express-backend nginx
 
 | Tarefa | Status |
 |--------|--------|
-| VPS com Ubuntu 22.04+ preparada | ☐ |
-| Node.js 20.x+ instalado | ☐ |
-| MySQL instalado e configurado | ☐ |
-| Repositório clonado | ☐ |
-| Backend `.env` configurado (produção) | ☐ |
-| Backend compilado (`npm run build`) | ☐ |
-| Frontend compilado (`npm run build`) | ☐ |
-| Nginx configurado e funcionando | ☐ |
-| SSL/HTTPS (Certbot) configurado | ☐ |
-| Backend como serviço systemd | ☐ |
-| Permissões de uploads definidas | ☐ |
-| Testes de saúde passou | ☐ |
+| Projeto Supabase criado (região eu-west-3) | ☐ |
+| Credenciais `DATABASE_URL`/`DIRECT_URL` obtidas | ☐ |
+| Bucket `products` público criado | ☐ |
+| Backend `.env` configurado | ☐ |
+| Backend deployado na Render (Blueprint/Web Service) | ☐ |
+| Env vars no dashboard preenchidas | ☐ |
+| `JWT_SECRET`/`JWT_REFRESH_SECRET` gerados novos | ☐ |
+| Frontend build com `VITE_API_URL` correcta | ☐ |
+| `/health` responde | ☐ |
+| `/api-docs` acessível | ☐ |
+| Imagens dos produtos carregam (Supabase Storage) | ☐ |
 
 ---
 
 ## Notas Importantes
 
-- **JWT Secrets:** Nunca use os valores de placeholder em produção. Gere secrets longos e únicas.
-- **CORS_ORIGIN:** Deve apontar sempre para o domínio de produção (https://...), nunca para `localhost`.
-- **`.env`:** Este ficheiro nunca deve ser commited ao Git. Certifique-se de que está no `.gitignore`.
-- **Backups do MySQL:** Configure backups automáticos antes de iniciar a receber dados reais de utilizadores:
-  ```bash
-  sudo apt install -y automysqlbackup
-  sudo dpkg-reconfigure automysqlbackup
-  ```
-- **Firewall:** Configure o UFW para permitir apenas portas 80, 443 e SSH:
-  ```bash
-  sudo ufw allow 22
-  sudo ufw allow 80
-  sudo ufw allow 443
-  sudo ufw enable
-  ```
+- **Secrets:** nunca uses placeholders em produção; rotaciona qualquer secret partilhada.
+- **`.env`:** nunca commitado — está no `.gitignore`.
+- **Bucket público:** necessário para as URLs públicas do Storage funcionarem.
+- **CORS:** em produção, `CORS_ORIGIN` deve apontar para o domínio real do frontend.
+- **Trust proxy:** o backend define `app.set("trust proxy", 1)` em produção para o rate limiter ver o IP real do cliente (a app inteira fica limitada por utilizador, não por proxy).
+- **Ficheiros antigos:** os registos antigos que apontavam para `/uploads/...` foram migrados para o Supabase Storage (`backend/scripts/migrate-images-to-supabase.ts`).
