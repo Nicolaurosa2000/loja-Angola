@@ -50,11 +50,14 @@ export class CartRepository {
   }
 
   async addItem(cartId: string, productId: string, quantity: number) {
-    return prisma.cartItem.upsert({
-      where: { cartId_productId: { cartId, productId } },
-      create: { cartId, productId, quantity },
-      update: { quantity: { increment: quantity } },
-    });
+    const existing = await prisma.cartItem.findFirst({ where: { cartId, productId } });
+    if (existing) {
+      return prisma.cartItem.update({
+        where: { id: existing.id },
+        data: { quantity: { increment: quantity } },
+      });
+    }
+    return prisma.cartItem.create({ data: { cartId, productId, quantity } });
   }
 
   async updateItemQuantity(itemId: string, quantity: number) {

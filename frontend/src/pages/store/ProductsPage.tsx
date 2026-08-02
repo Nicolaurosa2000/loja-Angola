@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { productService, ProductFilters } from "../../services/product.service";
 import { formatCurrency, getImageUrl } from "../../utils/format"; // 1. IMPORTADO getImageUrl AQUI
 
@@ -11,11 +12,29 @@ export default function ProductsPage() {
     limit: 12,
     search: searchParams.get("q") || undefined,
   });
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const { data, isLoading } = useQuery({
     queryKey: ["products", filters],
     queryFn: () => productService.getAll(filters),
   });
+
+  const { data: categoriesData } = useQuery({
+    queryKey: ["categories"],
+    queryFn: () => productService.getCategories(),
+  });
+
+  const categories = categoriesData?.data || [];
+
+  useEffect(() => {
+    if (!filters.categoryId || !categories.length) return;
+    for (const category of categories) {
+      if (category.children?.some((child) => child.id === filters.categoryId)) {
+        setExpanded((prev) => ({ ...prev, [category.id]: true }));
+        break;
+      }
+    }
+  }, [filters.categoryId, categories]);
 
   const products = data?.data || [];
   const meta = data?.meta;
@@ -62,6 +81,90 @@ export default function ProductsPage() {
           <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-sm">
             <div className="space-y-6">
               <div>
+                <h3 className="mb-3 font-semibold text-slate-900">Categorias</h3>
+                <div className="space-y-1">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setFilters({ ...filters, categoryId: undefined, page: 1 })
+                    }
+                    className={`w-full rounded-xl px-3 py-2 text-left text-sm transition ${
+                      !filters.categoryId
+                        ? "bg-primary-50 font-semibold text-primary-700"
+                        : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    }`}
+                  >
+                    Todas
+                  </button>
+                  {categories.map((category) => (
+                    <div key={category.id}>
+                      <div className="flex items-center gap-1">
+                        {category.children?.length ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setExpanded((prev) => ({
+                                ...prev,
+                                [category.id]: !prev[category.id],
+                              }))
+                            }
+                            className="rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+                            aria-label={`Expandir ${category.name}`}
+                          >
+                            {expanded[category.id] ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                          </button>
+                        ) : (
+                          <span className="inline-block w-6" />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setFilters({
+                              ...filters,
+                              categoryId: category.id,
+                              page: 1,
+                            })
+                          }
+                          className={`flex-1 rounded-xl px-2 py-2 text-left text-sm transition ${
+                            filters.categoryId === category.id
+                              ? "bg-primary-50 font-semibold text-primary-700"
+                              : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                          }`}
+                        >
+                          {category.name}
+                        </button>
+                      </div>
+                      {expanded[category.id] &&
+                        category.children?.map((child) => (
+                          <button
+                            key={child.id}
+                            type="button"
+                            onClick={() =>
+                              setFilters({
+                                ...filters,
+                                categoryId: child.id,
+                                page: 1,
+                              })
+                            }
+                            className={`ml-6 w-[calc(100%-1.5rem)] rounded-xl px-3 py-2 text-left text-sm transition ${
+                              filters.categoryId === child.id
+                                ? "bg-primary-50 font-semibold text-primary-700"
+                                : "text-slate-500 hover:bg-slate-50 hover:text-slate-900"
+                            }`}
+                          >
+                            {child.name}
+                          </button>
+                        ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="border-t border-slate-100 pt-4">
                 <h3 className="mb-3 font-semibold text-slate-900">
                   Filtrar por Preço
                 </h3>

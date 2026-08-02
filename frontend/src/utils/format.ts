@@ -1,7 +1,7 @@
 // Define a URL base do seu servidor no Render (pode usar variável de ambiente se preferir)
 const BACKEND_BASE_URL = import.meta.env.VITE_API_URL 
   ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') 
-  : 'https://loja-angola-tjg2.onrender.com';
+  : 'https://loja-angola-tj2g.onrender.com';
 
 export function formatCurrency(value: number): string {
   if (isNaN(value)) return '0 Kz';

@@ -22,6 +22,7 @@ import {
   Menu,
   Store,
   X,
+  LogOut,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -59,7 +60,7 @@ const navGroups = [
 
 export default function AdminLayout() {
   const location = useLocation();
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, logout } = useAuth();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
@@ -195,6 +196,15 @@ export default function AdminLayout() {
                   </p>
                 </div>
               </div>
+              <button
+                type="button"
+                aria-label="Sair da conta"
+                title="Sair"
+                onClick={logout}
+                className="flex h-11 w-11 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm transition hover:border-rose-200 hover:bg-rose-50 hover:text-rose-600"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
           </div>
         </header>

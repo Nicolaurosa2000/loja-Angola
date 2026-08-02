@@ -7,7 +7,9 @@ export const prisma = new PrismaClient({
 export async function connectDatabase(): Promise<void> {
   try {
     await prisma.$connect();
-    console.log('[DB] Database connected successfully');
+    const dbUrl = process.env.DATABASE_URL || '';
+    const dbType = dbUrl.includes('supabase') ? 'Supabase' : 'Local PostgreSQL';
+    console.log(`[DB] Database connected successfully (${dbType})`);
   } catch (error) {
     console.error('[DB] Database connection failed:', error);
     process.exit(1);

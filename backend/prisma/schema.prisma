@@ -9,66 +9,81 @@ datasource db {
 }
 
 model User {
-  id              String    @id(map: "pk_user") @default(uuid()) @db.VarChar(191)
-  name            String    @db.VarChar(191)
-  email           String    @unique @db.VarChar(191)
-  phone           String?   @db.VarChar(191)
-  password        String    @db.VarChar(191)
-  avatar          String?   @db.VarChar(191)
-  role            String    @default("CUSTOMER") @db.VarChar(191)
-  isActive        Boolean   @default(true) @map("isactive")
-  emailVerifiedAt DateTime? @map("emailverifiedat")
-  resetToken      String?   @map("resettoken") @db.VarChar(191)
-  resetTokenExp   DateTime? @map("resettokenexp")
-  createdAt       DateTime  @default(now()) @map("createdat")
-  updatedAt       DateTime  @updatedAt @map("updatedat")
-  deletedAt       DateTime? @map("deletedat")
-  trial453        String?   @db.Char(1)
+  id                 String               @id(map: "pk_user") @default(uuid()) @db.VarChar(191)
+  name               String               @db.VarChar(191)
+  email              String               @unique @db.VarChar(191)
+  phone              String?              @db.VarChar(191)
+  password           String               @db.VarChar(191)
+  avatar             String?              @db.VarChar(191)
+  role               String               @default("CUSTOMER") @db.VarChar(191)
+  isActive           Boolean              @default(true) @map("isactive")
+  emailVerifiedAt    DateTime?            @map("emailverifiedat")
+  resetToken         String?              @map("resettoken") @db.VarChar(191)
+  resetTokenExp      DateTime?            @map("resettokenexp")
+  createdAt          DateTime             @default(now()) @map("createdat")
+  updatedAt          DateTime             @updatedAt @map("updatedat")
+  deletedAt          DateTime?            @map("deletedat")
+  trial453           String?              @db.Char(1)
+  addresses          Address[]
+  auditlog           AuditLog[]
+  cart               Cart?
+  couponusage        CouponUsage[]
+  orders             Order[]
+  reviews            ProductReview[]
+  userroleassignment UserRoleAssignment[]
+  wishlistitem       WishlistItem[]
 
   @@map("user")
 }
 
 model Role {
-  id          String    @id(map: "pk_role") @default(uuid()) @db.VarChar(191)
-  name        String    @unique @db.VarChar(191)
-  description String?   @db.VarChar(191)
-  createdAt   DateTime  @default(now()) @map("createdat")
-  updatedAt   DateTime  @updatedAt @map("updatedat")
-  deletedAt   DateTime? @map("deletedat")
-  trial459    String?   @db.Char(1)
+  id                 String               @id(map: "pk_role") @default(uuid()) @db.VarChar(191)
+  name               String               @unique @db.VarChar(191)
+  description        String?              @db.VarChar(191)
+  createdAt          DateTime             @default(now()) @map("createdat")
+  updatedAt          DateTime             @updatedAt @map("updatedat")
+  deletedAt          DateTime?            @map("deletedat")
+  trial459           String?              @db.Char(1)
+  rolepermission     RolePermission[]
+  userroleassignment UserRoleAssignment[]
 
   @@map("role")
 }
 
 model Permission {
-  id          String   @id(map: "pk_permission") @default(uuid()) @db.VarChar(191)
-  name        String   @unique @db.VarChar(191)
-  description String?  @db.VarChar(191)
-  resource    String   @db.VarChar(191)
-  action      String   @db.VarChar(191)
-  createdAt   DateTime @default(now()) @map("createdat")
-  updatedAt   DateTime @updatedAt @map("updatedat")
-  trial459    String?  @db.Char(1)
+  id             String           @id(map: "pk_permission") @default(uuid()) @db.VarChar(191)
+  name           String           @unique @db.VarChar(191)
+  description    String?          @db.VarChar(191)
+  resource       String           @db.VarChar(191)
+  action         String           @db.VarChar(191)
+  createdAt      DateTime         @default(now()) @map("createdat")
+  updatedAt      DateTime         @updatedAt @map("updatedat")
+  trial459       String?          @db.Char(1)
+  rolepermission RolePermission[]
 
   @@map("permission")
 }
 
 model Category {
-  id              String    @id(map: "pk_category") @default(uuid()) @db.VarChar(191)
-  name            String    @db.VarChar(191)
-  slug            String    @unique @db.VarChar(191)
-  description     String?   @db.VarChar(191)
-  image           String?   @db.VarChar(191)
-  metaTitle       String?   @map("metatitle") @db.VarChar(191)
-  metaDescription String?   @map("metadescription") @db.VarChar(191)
-  isActive        Boolean   @default(true) @map("isactive")
-  sortOrder       Int       @default(0) @map("sortorder")
-  parentId        String?   @map("parentid") @db.VarChar(191)
-  createdAt       DateTime  @default(now()) @map("createdat")
-  updatedAt       DateTime  @updatedAt @map("updatedat")
-  deletedAt       DateTime? @map("deletedat")
-  trial456        String?   @db.Char(1)
+  id              String     @id(map: "pk_category") @default(uuid()) @db.VarChar(191)
+  name            String     @db.VarChar(191)
+  slug            String     @unique @db.VarChar(191)
+  description     String?    @db.VarChar(191)
+  image           String?    @db.VarChar(191)
+  metaTitle       String?    @map("metatitle") @db.VarChar(191)
+  metaDescription String?    @map("metadescription") @db.VarChar(191)
+  isActive        Boolean    @default(true) @map("isactive")
+  sortOrder       Int        @default(0) @map("sortorder")
+  parentId        String?    @map("parentid") @db.VarChar(191)
+  createdAt       DateTime   @default(now()) @map("createdat")
+  updatedAt       DateTime   @updatedAt @map("updatedat")
+  deletedAt       DateTime?  @map("deletedat")
+  trial456        String?    @db.Char(1)
+  parent          Category?  @relation("CategoryParent", fields: [parentId], references: [id])
+  children        Category[] @relation("CategoryParent")
+  products        Product[]
 
+  @@index([parentId])
   @@map("category")
 }
 
@@ -84,39 +99,50 @@ model Brand {
   updatedAt   DateTime  @updatedAt @map("updatedat")
   deletedAt   DateTime? @map("deletedat")
   trial456    String?   @db.Char(1)
+  products    Product[]
 
   @@map("brand")
 }
 
 model Product {
-  id               String    @id(map: "pk_product") @default(uuid()) @db.VarChar(191)
-  name             String    @db.VarChar(191)
-  slug             String    @unique @db.VarChar(191)
-  description      String    @db.VarChar(191)
-  fullDescription  String?   @map("fulldescription") @db.VarChar(191)
-  price            Float
-  promotionalPrice Float?    @map("promotionalprice")
-  sku              String    @unique @db.VarChar(191)
-  code             String?   @db.VarChar(191)
-  weight           Float?
-  length           Float?
-  width            Float?
-  height           Float?
-  stock            Int       @default(0)
-  minStock         Int       @default(0) @map("minstock")
-  isFeatured       Boolean   @default(false) @map("isfeatured")
-  isActive         Boolean   @default(true) @map("isactive")
-  status           String    @default("ACTIVE") @db.VarChar(191)
-  metaTitle        String?   @map("metatitle") @db.VarChar(191)
-  metaDescription  String?   @map("metadescription") @db.VarChar(191)
-  avgRating        Float?    @map("avgrating")
-  videoUrl         String?   @map("videourl") @db.VarChar(191)
-  categoryId       String    @map("categoryid") @db.VarChar(191)
-  brandId          String?   @map("brandid") @db.VarChar(191)
-  createdAt        DateTime  @default(now()) @map("createdat")
-  updatedAt        DateTime  @updatedAt @map("updatedat")
-  deletedAt        DateTime? @map("deletedat")
-  trial456         String?   @db.Char(1)
+  id                                                  String            @id(map: "pk_product") @default(uuid()) @db.VarChar(191)
+  name                                                String            @db.VarChar(191)
+  slug                                                String            @unique @db.VarChar(191)
+  description                                         String            @db.VarChar(191)
+  fullDescription                                     String?           @map("fulldescription") @db.VarChar(191)
+  price                                               Float
+  promotionalPrice                                    Float?            @map("promotionalprice")
+  sku                                                 String            @unique @db.VarChar(191)
+  code                                                String?           @db.VarChar(191)
+  weight                                              Float?
+  length                                              Float?
+  width                                               Float?
+  height                                              Float?
+  stock                                               Int               @default(0)
+  minStock                                            Int               @default(0) @map("minstock")
+  isFeatured                                          Boolean           @default(false) @map("isfeatured")
+  isActive                                            Boolean           @default(true) @map("isactive")
+  status                                              String            @default("ACTIVE") @db.VarChar(191)
+  metaTitle                                           String?           @map("metatitle") @db.VarChar(191)
+  metaDescription                                     String?           @map("metadescription") @db.VarChar(191)
+  avgRating                                           Float?            @map("avgrating")
+  videoUrl                                            String?           @map("videourl") @db.VarChar(191)
+  categoryId                                          String?           @map("categoryid") @db.VarChar(191)
+  brandId                                             String?           @map("brandid") @db.VarChar(191)
+  createdAt                                           DateTime          @default(now()) @map("createdat")
+  updatedAt                                           DateTime          @updatedAt @map("updatedat")
+  deletedAt                                           DateTime?         @map("deletedat")
+  trial456                                            String?           @db.Char(1)
+  cartItem                                            CartItem[]
+  orderItem                                           OrderItem[]
+  brand                                               Brand?            @relation(fields: [brandId], references: [id])
+  category                                            Category?         @relation(fields: [categoryId], references: [id], onDelete: NoAction)
+  images                                              ProductImage[]
+  productrelation_productrelation_productAIdToproduct ProductRelation[] @relation("productrelation_productAIdToproduct")
+  productrelation_productrelation_productBIdToproduct ProductRelation[] @relation("productrelation_productBIdToproduct")
+  reviews                                             ProductReview[]
+  tags                                                ProductTag[]
+  wishlistItem                                        WishlistItem[]
 
   @@index([brandId])
   @@index([categoryId])
@@ -134,11 +160,13 @@ model Address {
   province     String    @db.VarChar(191)
   zipCode      String?   @map("zipcode") @db.VarChar(191)
   isDefault    Boolean   @default(false) @map("isdefault")
-  userId       String    @map("userid") @db.VarChar(191)
+  userId       String?   @map("userid") @db.VarChar(191)
   createdAt    DateTime  @default(now()) @map("createdat")
   updatedAt    DateTime  @updatedAt @map("updatedat")
   deletedAt    DateTime? @map("deletedat")
   trial453     String?   @db.Char(1)
+  user         User?     @relation(fields: [userId], references: [id], onDelete: NoAction)
+  order        Order[]
 
   @@map("address")
 }
@@ -154,6 +182,7 @@ model AuditLog {
   userId     String?  @map("userid") @db.VarChar(191)
   createdAt  DateTime @default(now()) @map("createdat")
   trial453   String?  @db.Char(1)
+  user       User?    @relation(fields: [userId], references: [id])
 
   @@index([action])
   @@index([resource, resourceId])
@@ -179,13 +208,16 @@ model Banner {
 }
 
 model Cart {
-  id        String   @id(map: "pk_cart") @default(uuid()) @db.VarChar(191)
-  sessionId String?  @unique @map("sessionid") @db.VarChar(191)
-  userId    String?  @unique @map("userid") @db.VarChar(191)
-  couponId  String?  @map("couponid") @db.VarChar(191)
-  createdAt DateTime @default(now()) @map("createdat")
-  updatedAt DateTime @updatedAt @map("updatedat")
-  trial456  String?  @db.Char(1)
+  id        String     @id(map: "pk_cart") @default(uuid()) @db.VarChar(191)
+  sessionId String?    @unique @map("sessionid") @db.VarChar(191)
+  userId    String?    @unique @map("userid") @db.VarChar(191)
+  couponId  String?    @map("couponid") @db.VarChar(191)
+  createdAt DateTime   @default(now()) @map("createdat")
+  updatedAt DateTime   @updatedAt @map("updatedat")
+  trial456  String?    @db.Char(1)
+  coupon    Coupon?    @relation(fields: [couponId], references: [id])
+  user      User?      @relation(fields: [userId], references: [id])
+  items     CartItem[]
 
   @@map("cart")
 }
@@ -198,27 +230,32 @@ model CartItem {
   createdAt DateTime @default(now()) @map("createdat")
   updatedAt DateTime @updatedAt @map("updatedat")
   trial456  String?  @db.Char(1)
+  cart      Cart     @relation(fields: [cartId], references: [id], onDelete: NoAction)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction)
 
   @@map("cartitem")
 }
 
 model Coupon {
-  id             String    @id(map: "pk_coupon") @default(uuid()) @db.VarChar(191)
-  code           String    @unique @db.VarChar(191)
-  description    String?   @db.VarChar(191)
-  type           String    @db.VarChar(191)
+  id             String          @id(map: "pk_coupon") @default(uuid()) @db.VarChar(191)
+  code           String          @unique @db.VarChar(191)
+  description    String?         @db.VarChar(191)
+  type           String          @db.VarChar(191)
   value          Float
-  minOrderValue  Float?    @map("minordervalue")
-  maxUses        Int?      @map("maxuses")
-  usedCount      Int       @default(0) @map("usedcount")
-  maxUsesPerUser Int?      @map("maxusesperuser")
-  isActive       Int       @default(1) @map("isactive") @db.SmallInt
-  startsAt       DateTime? @map("startsat")
-  expiresAt      DateTime? @map("expiresat")
-  createdAt      DateTime  @default(now()) @map("createdat")
-  updatedAt      DateTime  @updatedAt @map("updatedat")
-  deletedAt      DateTime? @map("deletedat")
-  trial456       String?   @db.Char(1)
+  minOrderValue  Float?          @map("minordervalue")
+  maxUses        Int?            @map("maxuses")
+  usedCount      Int             @default(0) @map("usedcount")
+  maxUsesPerUser Int?            @map("maxusesperuser")
+  isActive       Boolean         @default(true) @map("isactive")
+  startsAt       DateTime?       @map("startsat")
+  expiresAt      DateTime?       @map("expiresat")
+  createdAt      DateTime        @default(now()) @map("createdat")
+  updatedAt      DateTime        @updatedAt @map("updatedat")
+  deletedAt      DateTime?       @map("deletedat")
+  trial456       String?         @db.Char(1)
+  cart           Cart[]
+  couponusage    CouponUsage[]
+  orderdiscount  OrderDiscount[]
 
   @@map("coupon")
 }
@@ -230,6 +267,9 @@ model CouponUsage {
   orderId   String?  @map("orderid") @db.VarChar(191)
   createdAt DateTime @default(now()) @map("createdat")
   trial456  String?  @db.Char(1)
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: NoAction)
+  order     Order?   @relation(fields: [orderId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction)
 
   @@map("couponusage")
 }
@@ -238,7 +278,7 @@ model NewsletterSubscriber {
   id         String    @id(map: "pk_newslettersubscriber") @default(uuid()) @db.VarChar(191)
   email      String    @unique @db.VarChar(191)
   name       String?   @db.VarChar(191)
-  isActive   Int       @default(1) @map("isactive") @db.SmallInt
+  isActive   Boolean   @default(true) @map("isactive")
   verifiedAt DateTime? @map("verifiedat")
   createdAt  DateTime  @default(now()) @map("createdat")
   updatedAt  DateTime  @updatedAt @map("updatedat")
@@ -249,26 +289,32 @@ model NewsletterSubscriber {
 }
 
 model Order {
-  id             String    @id(map: "pk_order") @default(uuid()) @db.VarChar(191)
-  orderNumber    String    @map("ordernumber") @db.VarChar(191)
-  userId         String    @map("userid") @db.VarChar(191)
-  addressId      String?   @map("addressid") @db.VarChar(191)
-  status         String    @default("PENDING") @db.VarChar(191)
+  id             String               @id(map: "pk_order") @default(uuid()) @db.VarChar(191)
+  orderNumber    String?              @map("ordernumber") @db.VarChar(191)
+  userId         String?              @map("userid") @db.VarChar(191)
+  addressId      String?              @map("addressid") @db.VarChar(191)
+  status         String               @default("PENDING") @db.VarChar(191)
   subtotal       Float
-  discountAmount Float     @default(0) @map("discountamount")
-  shippingAmount Float     @default(0) @map("shippingamount")
+  discountAmount Float                @default(0) @map("discountamount")
+  shippingAmount Float                @default(0) @map("shippingamount")
   total          Float
-  paymentMethod  String?   @map("paymentmethod") @db.VarChar(191)
-  paymentStatus  String?   @map("paymentstatus") @db.VarChar(191)
-  notes          String?   @db.VarChar(191)
-  trackingCode   String?   @map("trackingcode") @db.VarChar(191)
-  paidAt         DateTime? @map("paidat")
-  cancelledAt    DateTime? @map("cancelledat")
-  deliveredAt    DateTime? @map("deliveredat")
-  createdAt      DateTime  @default(now()) @map("createdat")
-  updatedAt      DateTime  @updatedAt @map("updatedat")
-  deletedAt      DateTime? @map("deletedat")
-  trial456       String?   @db.Char(1)
+  paymentMethod  String?              @map("paymentmethod") @db.VarChar(191)
+  paymentStatus  String?              @map("paymentstatus") @db.VarChar(191)
+  notes          String?              @db.VarChar(191)
+  trackingCode   String?              @map("trackingcode") @db.VarChar(191)
+  paidAt         DateTime?            @map("paidat")
+  cancelledAt    DateTime?            @map("cancelledat")
+  deliveredAt    DateTime?            @map("deliveredat")
+  createdAt      DateTime             @default(now()) @map("createdat")
+  updatedAt      DateTime             @updatedAt @map("updatedat")
+  deletedAt      DateTime?            @map("deletedat")
+  trial456       String?              @db.Char(1)
+  couponusage    CouponUsage[]
+  address        Address?             @relation(fields: [addressId], references: [id])
+  user           User?                @relation(fields: [userId], references: [id], onDelete: NoAction)
+  discounts      OrderDiscount[]
+  items          OrderItem[]
+  payments       PaymentTransaction[]
 
   @@index([status])
   @@index([userId])
@@ -282,6 +328,8 @@ model OrderDiscount {
   amount    Float
   createdAt DateTime @default(now()) @map("createdat")
   trial456  String?  @db.Char(1)
+  coupon    Coupon   @relation(fields: [couponId], references: [id], onDelete: NoAction)
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: NoAction)
 
   @@map("orderdiscount")
 }
@@ -291,27 +339,30 @@ model OrderItem {
   quantity   Int
   unitPrice  Float    @map("unitprice")
   totalPrice Float    @map("totalprice")
-  productId  String   @map("productid") @db.VarChar(191)
-  orderId    String   @map("orderid") @db.VarChar(191)
+  productId  String?  @map("productid") @db.VarChar(191)
+  orderId    String?  @map("orderid") @db.VarChar(191)
   createdAt  DateTime @default(now()) @map("createdat")
   updatedAt  DateTime @updatedAt @map("updatedat")
   trial456   String?  @db.Char(1)
+  order      Order?   @relation(fields: [orderId], references: [id], onDelete: NoAction)
+  product    Product? @relation(fields: [productId], references: [id], onDelete: NoAction)
 
   @@map("orderitem")
 }
 
 model PaymentTransaction {
   id              String    @id(map: "pk_paymenttransaction") @default(uuid()) @db.VarChar(191)
-  orderId         String    @map("orderid") @db.VarChar(191)
+  orderId         String?   @map("orderid") @db.VarChar(191)
   method          String    @db.VarChar(191)
   amount          Float
   status          String    @default("PENDING") @db.VarChar(191)
   transactionId   String?   @map("transactionid") @db.VarChar(191)
-  gatewayResponse String?   @map("gatewayresponse") @db.VarChar(191)
+  gatewayResponse String?   @map("gatewayresponse") @db.Text
   paidAt          DateTime? @map("paidat")
   createdAt       DateTime  @default(now()) @map("createdat")
   updatedAt       DateTime  @updatedAt @map("updatedat")
   trial459        String?   @db.Char(1)
+  order           Order?    @relation(fields: [orderId], references: [id], onDelete: NoAction)
 
   @@map("paymenttransaction")
 }
@@ -322,19 +373,22 @@ model ProductImage {
   alt       String?  @db.VarChar(191)
   sortOrder Int      @default(0) @map("sortorder")
   isCover   Boolean  @default(false) @map("iscover")
-  productId String   @map("productid") @db.VarChar(191)
+  productId String?  @map("productid") @db.VarChar(191)
   createdAt DateTime @default(now()) @map("createdat")
   updatedAt DateTime @updatedAt @map("updatedat")
   trial459  String?  @db.Char(1)
+  product   Product? @relation(fields: [productId], references: [id], onDelete: NoAction)
 
   @@map("productimage")
 }
 
 model ProductRelation {
-  productAId String   @map("productaid") @db.VarChar(191)
-  productBId String   @map("productbid") @db.VarChar(191)
-  createdAt  DateTime @default(now()) @map("createdat")
-  trial459   String?  @db.Char(1)
+  productAId                                  String   @map("productaid") @db.VarChar(191)
+  productBId                                  String   @map("productbid") @db.VarChar(191)
+  createdAt                                   DateTime @default(now()) @map("createdat")
+  trial459                                    String?  @db.Char(1)
+  product_productrelation_productAIdToproduct Product  @relation("productrelation_productAIdToproduct", fields: [productAId], references: [id], onDelete: NoAction)
+  product_productrelation_productBIdToproduct Product  @relation("productrelation_productBIdToproduct", fields: [productBId], references: [id], onDelete: NoAction)
 
   @@id([productAId, productBId], map: "pk_productrelation")
   @@map("productrelation")
@@ -352,6 +406,8 @@ model ProductReview {
   updatedAt DateTime  @updatedAt @map("updatedat")
   deletedAt DateTime? @map("deletedat")
   trial459  String?   @db.Char(1)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: NoAction)
+  user      User      @relation(fields: [userId], references: [id], onDelete: NoAction)
 
   @@map("productreview")
 }
@@ -359,19 +415,22 @@ model ProductReview {
 model ProductTag {
   id        String   @id(map: "pk_producttag") @default(uuid()) @db.VarChar(191)
   name      String   @db.VarChar(191)
-  productId String   @map("productid") @db.VarChar(191)
+  productId String?  @map("productid") @db.VarChar(191)
   createdAt DateTime @default(now()) @map("createdat")
   updatedAt DateTime @default(now()) @updatedAt @map("updatedat")
   trial459  String?  @db.Char(1)
+  product   Product? @relation(fields: [productId], references: [id], onDelete: NoAction)
 
   @@map("producttag")
 }
 
 model RolePermission {
-  roleId       String   @map("roleid") @db.VarChar(191)
-  permissionId String   @map("permissionid") @db.VarChar(191)
-  createdAt    DateTime @default(now()) @map("createdat")
-  trial459     String?  @db.Char(1)
+  roleId       String     @map("roleid") @db.VarChar(191)
+  permissionId String     @map("permissionid") @db.VarChar(191)
+  createdAt    DateTime   @default(now()) @map("createdat")
+  trial459     String?    @db.Char(1)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: NoAction)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: NoAction)
 
   @@id([roleId, permissionId], map: "pk_rolepermission")
   @@map("rolepermission")
@@ -409,6 +468,8 @@ model UserRoleAssignment {
   roleId    String   @map("roleid") @db.VarChar(191)
   createdAt DateTime @default(now()) @map("createdat")
   trial459  String?  @db.Char(1)
+  role      Role     @relation(fields: [roleId], references: [id], onDelete: NoAction)
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction)
 
   @@id([userId, roleId], map: "pk_userroleassignment")
   @@map("userroleassignment")
@@ -420,6 +481,8 @@ model WishlistItem {
   productId String   @map("productid") @db.VarChar(191)
   createdAt DateTime @default(now()) @map("createdat")
   trial459  String?  @db.Char(1)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: NoAction)
+  user      User     @relation(fields: [userId], references: [id], onDelete: NoAction)
 
   @@map("wishlistitem")
 }

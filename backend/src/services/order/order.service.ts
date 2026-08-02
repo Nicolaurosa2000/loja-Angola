@@ -2,6 +2,7 @@ import { OrderRepository } from '../../repositories/order.repository';
 import { CartRepository } from '../../repositories/cart.repository';
 import { AddressRepository } from '../../repositories/address.repository';
 import { PaymentService } from '../payment/payment.service';
+import { PaymentResult } from '../../interfaces';
 import { AppError } from '../../middlewares';
 import { generateOrderNumber } from '../../helpers';
 import { prisma } from '../../config/database';
@@ -38,7 +39,13 @@ export class OrderService {
     if (!order) throw new AppError('Order not found', 404);
     if (order.userId !== userId) throw new AppError('Unauthorized', 403);
 
-    const uploaded = await uploadService.saveRecord(file);
+    const uploadedUrl = await uploadService.uploadToSupabase(file);
+    const uploaded = await uploadService.saveRecord({
+      filename: file.originalname,
+      mimeType: file.mimetype,
+      size: file.size,
+      url: uploadedUrl,
+    });
     const proofNote = `${order.notes ? `${order.notes}\n` : ''}Comprovativo: ${uploaded.url}`;
 
     await prisma.order.update({
@@ -146,114 +153,125 @@ export class OrderService {
     const total = Math.max(0, subtotal - discountAmount);
     const orderNumber = generateOrderNumber();
 
-    const result = await prisma.$transaction(async (tx) => {
-      const order = await tx.order.create({
-        data: {
-          orderNumber,
-          userId,
-          addressId: data.addressId,
-          status: 'PENDING',
-          subtotal,
-          discountAmount,
-          shippingAmount: 0,
-          total,
-          paymentMethod: data.paymentMethod,
-          paymentStatus: 'PENDING',
-          notes: data.notes,
-          items: {
-            create: orderItems,
+    let paymentTransactionId: string | undefined;
+    let paymentResult: PaymentResult | undefined;
+
+    const result = await prisma.$transaction(
+      async (tx) => {
+        const order = await tx.order.create({
+          data: {
+            orderNumber,
+            userId,
+            addressId: data.addressId,
+            status: 'PENDING',
+            subtotal,
+            discountAmount,
+            shippingAmount: 0,
+            total,
+            paymentMethod: data.paymentMethod,
+            paymentStatus: 'PENDING',
+            notes: data.notes,
+            items: {
+              create: orderItems,
+            },
           },
-        },
-        include: {
-          items: {
-            include: {
-              product: {
-                include: {
-                  images: { where: { isCover: true }, take: 1 },
+          include: {
+            items: {
+              include: {
+                product: {
+                  include: {
+                    images: { where: { isCover: true }, take: 1 },
+                  },
                 },
               },
             },
-          },
-          address: true,
-          payments: true,
-        },
-      });
-
-      for (const item of orderItems) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: { stock: { decrement: item.quantity } },
-        });
-      }
-
-      if (couponId) {
-        await tx.coupon.update({
-          where: { id: couponId },
-          data: { usedCount: { increment: 1 } },
-        });
-
-        await tx.couponUsage.create({
-          data: {
-            couponId,
-            userId,
-            orderId: order.id,
+            address: true,
+            payments: true,
           },
         });
 
-        await tx.orderDiscount.create({
-          data: {
-            couponId,
-            orderId: order.id,
-            amount: discountAmount,
-          },
-        });
-      }
+        for (const item of orderItems) {
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
 
-      if (data.paymentMethod === 'MULTICAIXA_EXPRESS' || data.paymentMethod === 'CASH_ON_DELIVERY') {
-        const transaction = await tx.paymentTransaction.create({
-          data: {
-            orderId: order.id,
-            method: data.paymentMethod,
-            amount: total,
-            status: 'PENDING',
-          },
-        });
+        if (couponId) {
+          await tx.coupon.update({
+            where: { id: couponId },
+            data: { usedCount: { increment: 1 } },
+          });
 
-        const user = await tx.user.findUnique({ where: { id: userId } });
-
-        const paymentResult = await this.paymentService.processPayment({
-          orderId: order.id,
-          amount: total,
-          method: data.paymentMethod,
-          customerPhone: user?.phone || '',
-          metadata: {
-            orderNumber,
-            customerName: user?.name || '',
-            items: paymentItems,
-          },
-        });
-
-        if (paymentResult.receipt) {
-          await tx.paymentTransaction.update({
-            where: { id: transaction.id },
+          await tx.couponUsage.create({
             data: {
-              transactionId: paymentResult.receipt.orderNumber,
-              gatewayResponse: JSON.stringify(paymentResult),
+              couponId,
+              userId,
+              orderId: order.id,
+            },
+          });
+
+          await tx.orderDiscount.create({
+            data: {
+              couponId,
+              orderId: order.id,
+              amount: discountAmount,
             },
           });
         }
-      }
 
-      if (cart) {
-        await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
-        await tx.cart.update({
-          where: { id: cart.id },
-          data: { couponId: null },
-        });
-      }
+        if (data.paymentMethod === 'MULTICAIXA_EXPRESS' || data.paymentMethod === 'CASH_ON_DELIVERY') {
+          const transaction = await tx.paymentTransaction.create({
+            data: {
+              orderId: order.id,
+              method: data.paymentMethod,
+              amount: total,
+              status: 'PENDING',
+            },
+          });
 
-      return order;
-    });
+          paymentTransactionId = transaction.id;
+
+          const user = await tx.user.findUnique({ where: { id: userId } });
+
+          paymentResult = await this.paymentService.processPayment({
+            orderId: order.id,
+            amount: total,
+            method: data.paymentMethod,
+            customerPhone: user?.phone || '',
+            metadata: {
+              orderNumber,
+              customerName: user?.name || '',
+              items: paymentItems,
+            },
+          });
+        }
+
+        if (cart) {
+          await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+          await tx.cart.update({
+            where: { id: cart.id },
+            data: { couponId: null },
+          });
+        }
+
+        return order;
+      },
+      {
+        maxWait: 10000,
+        timeout: 60000,
+      }
+    );
+
+    if (paymentResult?.receipt && paymentTransactionId) {
+      await prisma.paymentTransaction.update({
+        where: { id: paymentTransactionId },
+        data: {
+          transactionId: paymentResult.receipt.orderNumber,
+          gatewayResponse: JSON.stringify(paymentResult),
+        },
+      });
+    }
 
     if (data.paymentMethod === 'MULTICAIXA_EXPRESS') {
       const user = await prisma.user.findUnique({ where: { id: userId } });

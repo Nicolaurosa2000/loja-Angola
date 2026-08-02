@@ -4,13 +4,18 @@ import helmet from "helmet";
 import compression from "compression";
 import path from "path";
 import swaggerUi from "swagger-ui-express";
-import { appConfig } from "./config/app";
+import { appConfig, isProduction } from "./config/app";
 import { swaggerSpec } from "./config/swagger";
 import { apiLimiter } from "./middlewares/rate-limiter";
 import { errorHandler, notFoundHandler } from "./middlewares/error-handler";
 import routes from "./routes";
 
 const app = express();
+
+// Confia no proxy (Render) para obter o IP real do cliente no rate limiter
+if (isProduction) {
+  app.set("trust proxy", 1);
+}
 
 // 1. Configuração de CORS robusta
 app.use(

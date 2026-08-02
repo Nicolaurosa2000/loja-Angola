@@ -1,8 +1,10 @@
 import multer from 'multer';
 import { createClient } from '@supabase/supabase-js';
-import { prisma } from '../../config/prisma'; // Adapte o caminho do seu Prisma Client
+// 1. Ajuste o caminho conforme a localização real do seu ficheiro do Prisma Client
+// Se estiver em src/lib/prisma.ts use '../lib/prisma' ou '../../lib/prisma'
+import { prisma } from '../../config/database'; 
 
-// Configura o Multer para armazenar na memória em vez do disco
+// Configura o Multer para armazenar na memória
 export const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 5 * 1024 * 1024 }, // Limite de 5MB
@@ -14,7 +16,7 @@ const supabaseKey = process.env.SUPABASE_KEY!;
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 class UploadService {
-  private bucketName = 'products'; // Nome do bucket que criou no Supabase
+  private bucketName = 'products'; // Nome do bucket no Supabase
 
   async uploadToSupabase(file: Express.Multer.File): Promise<string> {
     const fileExt = file.originalname.split('.').pop();
@@ -42,19 +44,22 @@ class UploadService {
   }
 
   async saveRecord(data: { filename: string; mimeType: string; size: number; url: string }) {
-    // Salva a referência na sua base de dados
-    return await prisma.media.create({
+    // 2. Usar prisma.upload em vez de prisma.media para bater com o schema.prisma
+    return await prisma.upload.create({
       data: {
         filename: data.filename,
+        originalName: data.filename,
         mimeType: data.mimeType,
         size: data.size,
+        path: data.url,
         url: data.url,
       },
     });
   }
 
   async deleteFromSupabaseAndDb(id: string) {
-    const record = await prisma.media.findUnique({ where: { id } });
+    // 3. Usar prisma.upload para procurar e apagar
+    const record = await prisma.upload.findUnique({ where: { id } });
     if (!record) throw new Error('Ficheiro não encontrado');
 
     const urlParts = record.url.split(`${this.bucketName}/`);
@@ -62,7 +67,7 @@ class UploadService {
       await supabase.storage.from(this.bucketName).remove([urlParts[1]]);
     }
 
-    return await prisma.media.delete({ where: { id } });
+    return await prisma.upload.delete({ where: { id } });
   }
 }
 

@@ -16,8 +16,6 @@ export class UserService {
 
     if (role) {
       where.role = role;
-    } else {
-      where.role = { in: ['ADMIN', 'STAFF'] };
     }
 
     if (search) {

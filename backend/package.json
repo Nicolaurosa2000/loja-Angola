@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Angola Express E-commerce - Backend API",
   "main": "dist/server.js",
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "dev": "nodemon",
     "build": "tsc",

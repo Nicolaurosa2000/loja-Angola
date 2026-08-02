@@ -4,6 +4,7 @@ import api from "../../services/api";
 import { formatCurrency, formatDate } from "../../utils/format";
 import { Product } from "../../types";
 import ImageUploader, { UploadedImage } from "../../components/ImageUploader";
+import Toast, { useToast } from "../../components/Toast";
 import {
   PlusCircle,
   PencilLine,
@@ -46,6 +47,7 @@ interface ProductFormState extends ProductForm {
 
 export default function AdminProductsPage() {
   const queryClient = useQueryClient();
+  const { toast, showToast } = useToast();
   const [page, setPage] = useState(1);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showForm, setShowForm] = useState(false);
@@ -156,7 +158,11 @@ export default function AdminProductsPage() {
       setShowForm(false);
       setEditingId(null);
       resetForm();
-      alert("Produto salvo com sucesso!");
+      showToast({
+        message: "Produto salvo com sucesso.",
+        type: "success",
+        title: editingId ? "Produto atualizado" : "Produto criado",
+      });
     },
     onError: (error: any) => {
       console.error("Erro ao salvar produto:", error);
@@ -164,14 +170,24 @@ export default function AdminProductsPage() {
         error?.response?.data?.message ||
         error?.message ||
         "Erro ao salvar produto";
-      alert(`❌ Erro: ${errorMessage}`);
+      showToast({
+        message: errorMessage,
+        type: "error",
+        title: "Erro ao salvar produto",
+      });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/admin/products/${id}`),
-    onSuccess: () =>
-      queryClient.invalidateQueries({ queryKey: ["admin-products"] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admin-products"] });
+      showToast({
+        message: "Produto eliminado com sucesso.",
+        type: "success",
+        title: "Produto eliminado",
+      });
+    },
   });
 
   const resetForm = () =>
@@ -244,7 +260,11 @@ export default function AdminProductsPage() {
       setActiveTab("basico");
     } catch (error) {
       console.error("Erro ao carregar produto:", error);
-      alert("Erro ao carregar dados do produto");
+      showToast({
+        message: "Erro ao carregar dados do produto.",
+        type: "error",
+        title: "Erro",
+      });
     }
   };
 
@@ -364,34 +384,63 @@ export default function AdminProductsPage() {
 
               // Validações
               if (!form.name.trim()) {
-                alert("Nome do produto é obrigatório");
+                showToast({
+                  message: "Nome do produto é obrigatório.",
+                  type: "error",
+                  title: "Validação",
+                });
                 return;
               }
               if (!form.description.trim()) {
-                alert("Descrição é obrigatória");
+                showToast({
+                  message: "Descrição é obrigatória.",
+                  type: "error",
+                  title: "Validação",
+                });
                 return;
               }
               if (form.description.trim().length < 10) {
-                alert("Descrição deve ter pelo menos 10 caracteres");
+                showToast({
+                  message: "Descrição deve ter pelo menos 10 caracteres.",
+                  type: "error",
+                  title: "Validação",
+                });
                 return;
               }
               if (!form.sku.trim()) {
-                alert("SKU é obrigatório");
+                showToast({
+                  message: "SKU é obrigatório.",
+                  type: "error",
+                  title: "Validação",
+                });
                 return;
               }
               if (form.price <= 0) {
-                alert("Preço deve ser maior que 0");
+                showToast({
+                  message: "Preço deve ser maior que 0.",
+                  type: "error",
+                  title: "Validação",
+                });
                 return;
               }
               if (!form.categoryId) {
-                alert("Categoria é obrigatória");
+                showToast({
+                  message: "Categoria é obrigatória.",
+                  type: "error",
+                  title: "Validação",
+                });
                 return;
               }
               if (
                 form.promotionalPrice &&
                 Number(form.promotionalPrice) >= form.price
               ) {
-                alert("Preço promocional deve ser menor que o preço normal");
+                showToast({
+                  message:
+                    "Preço promocional deve ser menor que o preço normal.",
+                  type: "error",
+                  title: "Validação",
+                });
                 return;
               }
 
@@ -971,6 +1020,8 @@ export default function AdminProductsPage() {
           )}
         </div>
       )}
+
+      {toast && <Toast toast={toast} onClose={() => showToast(null)} />}
     </div>
   );
 }
