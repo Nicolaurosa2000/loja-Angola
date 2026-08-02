@@ -4,7 +4,7 @@ import { ApiResponse } from '../types';
 
 
 // Certifique-se de que a URL comece estritamente com "https://"
-const API_URL = import.meta.env.VITE_API_URL || 'https://loja-angola-tj2g.onrender.com/api';
+const API_URL = import.meta.env.VITE_API_URL || 'https://angola-express-backend.onrender.com/api';
 
 export const api = axios.create({
   baseURL: API_URL.trim(),
