@@ -11,6 +11,7 @@ backend/uploads/*
 !backend/uploads/.gitkeep
 backend/prisma/dev.db
 backend/prisma/dev.db-journal
+*.tsbuildinfo
 
 # IDE
 .vscode/
