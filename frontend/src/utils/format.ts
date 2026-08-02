@@ -1,5 +1,5 @@
 // Define a URL base do seu servidor no Render (pode usar variável de ambiente se preferir)
-const BACKEND_BASE_URL = import.meta.env.VITE_API_URL 
+export const BACKEND_BASE_URL = import.meta.env.VITE_API_URL 
   ? import.meta.env.VITE_API_URL.replace(/\/api\/?$/, '') 
   : 'https://angola-express-backend.onrender.com';
 

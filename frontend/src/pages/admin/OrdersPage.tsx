@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
-import { Eye } from "lucide-react";
+import { Eye, X } from "lucide-react";
 import {
   adminOrderService,
   AdminOrder,
 } from "../../services/admin-order.service";
-import { formatCurrency, formatDate, formatDateTime } from "../../utils/format";
+import { formatCurrency, formatDate, formatDateTime, BACKEND_BASE_URL } from "../../utils/format";
 import IconActionButton from "../../components/ui/IconActionButton";
 
 const statusLabels: Record<string, { label: string; color: string }> = {
@@ -42,7 +42,10 @@ const statusFlow = [
 const extractProofUrl = (notes?: string) => {
   if (!notes) return null;
   const match = notes.match(/https?:\/\/[^\s)]+|\/uploads\/[^\s)]+/);
-  return match ? match[0].replace(/[.,;]+$/, "") : null;
+  if (!match) return null;
+  const url = match[0].replace(/[.,;]+$/, "");
+  if (url.startsWith("/")) return `${BACKEND_BASE_URL}${url}`;
+  return url;
 };
 
 export default function OrdersPage() {
@@ -355,8 +358,14 @@ export default function OrdersPage() {
         </div>
 
         {proofPreviewUrl && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4">
-            <div className="w-full max-w-3xl rounded-[24px] border border-slate-200 bg-white p-4 shadow-2xl">
+          <div
+            className="fixed inset-0 z-50 flex overflow-y-auto bg-black/60 p-4 sm:p-8"
+            onClick={() => setProofPreviewUrl(null)}
+          >
+            <div
+              className="m-auto w-full max-w-3xl rounded-[24px] border border-slate-200 bg-white p-4 shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between gap-3">
                 <h3 className="text-lg font-semibold text-slate-900">
                   Comprovativo do pedido
@@ -364,16 +373,17 @@ export default function OrdersPage() {
                 <button
                   type="button"
                   onClick={() => setProofPreviewUrl(null)}
-                  className="rounded-full border border-slate-200 px-3 py-1.5 text-sm font-semibold text-slate-600 transition hover:bg-slate-50"
+                  aria-label="Fechar comprovativo"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-slate-200 text-slate-600 transition hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500/40 focus-visible:ring-offset-2"
                 >
-                  Fechar
+                  <X className="h-4 w-4" />
                 </button>
               </div>
-              <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50">
+              <div className="mt-4 max-h-[70vh] overflow-auto rounded-2xl border border-slate-200 bg-slate-50">
                 <img
                   src={proofPreviewUrl}
                   alt="Comprovativo do pedido"
-                  className="max-h-[70vh] w-full object-contain"
+                  className="w-full object-contain"
                 />
               </div>
             </div>
